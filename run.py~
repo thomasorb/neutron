@@ -1,0 +1,7 @@
+import neutron.core
+
+player = neutron.core.Player('/home/thomas/data/M1/m1.final.deep_frame.fits')
+player.reset_norm(99.9)
+player.p['harm_number'] = 5
+for i in range(100):
+    player.play((1000+i,1000+i), 30)
