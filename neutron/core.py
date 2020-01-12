@@ -6,14 +6,15 @@ import wave
 import sys
 import pylab as pl
 import multiprocessing
-from matplotlib.backend_bases import MouseButton
-from matplotlib.widgets import Slider
+import matplotlib.backend_bases
+import matplotlib.widgets
 import time
-
+import neutron.utils
 print(sd.query_devices())
 sd.default.samplerate = 48000
 sd.default.device = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
 
+NCHANNELS = 2
 
 class Machine(object):
 
@@ -84,15 +85,15 @@ class Worms(Base):
         
     def update(self):
         if not hasattr(self, 'worms'):
-            self.worms = [Worm(self.p) for i in range(self.getp('harm_number'))]
+            self.worms = [Worm(self.p) for i in range(self.getp('harm_number') * NCHANNELS)]
             
-        if len(self.worms) == self.getp('harm_number'):
+        if len(self.worms) == self.getp('harm_number') * NCHANNELS:
             return
 
-        while len(self.worms) > self.getp('harm_number'):
+        while len(self.worms) > self.getp('harm_number') * NCHANNELS:
             self.worms.pop(0)
 
-        while len(self.worms) < self.getp('harm_number'):
+        while len(self.worms) < self.getp('harm_number') * NCHANNELS:
             self.worms.append(Worm(self.p))
 
     def get(self):
@@ -101,10 +102,13 @@ class Worms(Base):
     
 class Player(Base):
 
-    def __init__(self, path, p, nchannels=2, rate=44100, sample_width=2):
+    def __init__(self, path, p, sample_width=2):
         self.data = pyfits.open(path)[0].data
-        self.reset_norm()
         self.shape = np.array(self.data.shape)
+        self.data_sub = self.data.flatten()
+        np.random.shuffle(self.data_sub)
+        self.data_sub = self.data_sub[:int(0.02*self.data_sub.size)]
+        print(self.data_sub.shape)
         
         self.p = p
         self.p['harm_number'] = (5, 1, 20, int)
@@ -113,20 +117,18 @@ class Player(Base):
         self.p['size'] = (60, 1, 200, int)
         self.p['stop'] = (False, None, None, None)
         self.p['worm_move_scale'] = (10, 1, 100, int)
-        self.p['harm_scale'] = (0., 0., 2., float)
-
+        self.p['harm_scale'] = (0., -2., 2., float)
+        self.p['norm_perc_scale'] = (2, 0, 5, float)
+        self.old_norm_perc_scale = None
+        self.get_norm()
+        
         self.worms = Worms(self.p)
         
-        self.stream = sd.OutputStream(dtype=np.int16, channels=1)
-
+        self.stream = sd.OutputStream(dtype=np.int16, channels=NCHANNELS)
         self.stream.start()
         self.play()
+                
         
-
-        
-    def reset_norm(self, perc=99.9):
-        self.norm = np.nanpercentile(self.data, perc)
-
     def _get_box(self, pos, size):
         if len(pos) != self.data.ndim:
             raise Exception('center must be a tuple of length {}'.format(self.data.ndim))
@@ -134,23 +136,47 @@ class Player(Base):
         slices = tuple([slice(c - size, c + size + 1) for c in center])
         box = self.data.__getitem__(slices).flatten()
         return box
-    
+
+    def get_norm(self):
+        if float(self.getp('norm_perc_scale')) != self.old_norm_perc_scale:
+            self.norm = np.nanpercentile(self.data_sub, 100-10**(1-self.getp('norm_perc_scale')))
+            self.old_norm_perc_scale = float(self.getp('norm_perc_scale'))
+        return self.norm
+            
     def get_sample(self):
         s = int(self.getp('size'))
         harm_scale = self.getp('harm_scale')
         centers = self.worms.get()
-        box = self._get_box(centers[0], s)
-        for i in range(1, len(centers)):
-            iscale = (len(centers) - i)/len(centers) * (1-harm_scale) +  harm_scale
-            box += (self._get_box(centers[i], s + i * self.getp('harm_step'))[:box.size]) * iscale
-        box/= self.norm
-        box -= np.mean(box)
-        return box
+        boxes = list()
+        nharm = len(centers) // NCHANNELS
+        for ichan in range(NCHANNELS):
+            box = self._get_box(centers[ichan*nharm], s)
+            for i in range(1, nharm):
+                iscale = (nharm - i)/nharm * (1-harm_scale) + harm_scale
+                box += (self._get_box(
+                    centers[i+ichan*nharm], s + i * self.getp('harm_step'))[:box.size]) * iscale
+            box /= self.get_norm()
+
+            box -= np.mean(box)
+            box *= neutron.utils.envelope(box.size, 0.01, 0, 1, 0.)
+            boxes.append(box)
+        return np.array(boxes).T
         
-    def play_sample(self):  
+    def play_sample(self):
         sample = self.get_sample()
+        nmix = int(sample.shape[0]*0.05)
+        if hasattr(self, 'next_sample'):
+            if self.next_sample.size == nmix:
+                sample[:nmix] *= np.atleast_2d(neutron.utils.envelope(nmix,1,0,0,0)).T
+                sample[:nmix] += self.next_sample * np.atleast_2d(neutron.utils.envelope(nmix,0,1,0,0)).T
+            
+
+        self.next_sample = sample[-nmix:]
+        sample = sample[:-nmix]
+        
+        
         sample *= 2**15 - 1
-        sample = sample.astype(np.int16)
+        sample = np.ascontiguousarray(sample.astype(np.int16))
         self.stream.write(sample)
 
     def play(self):
@@ -158,9 +184,20 @@ class Player(Base):
             self.play_sample()
         
 
-class ViewerSlider(Base):
-    pass
-    
+class Slider(Base):
+
+    def __init__(self, ax, key, p):
+        self.p = p
+        self.key = str(key)
+        self.slider = matplotlib.widgets.Slider(
+            ax, self.key,
+            self.p[self.key][1], self.p[self.key][2],
+            valinit=self.p[self.key][0])
+        self.slider.on_changed(self.sliders_onchanged)
+
+    def sliders_onchanged(self, val):
+        self.setp(self.key, val)
+        
             
 class Viewer(Base):
 
@@ -171,19 +208,18 @@ class Viewer(Base):
         self.show()
         
     def show(self):
-        self.fig = pl.figure(constrained_layout=True)
+        self.fig = pl.figure(figsize=((7,8)), constrained_layout=True)
         slider_nb = 0
         while len(self.p) == 0:
             time.sleep(0.1)
         for key in self.p.keys():
             if self.p[key][1] is not None:
                 slider_nb += 1
-        #self.fig.subplots_adjust(left=0.25, bottom=0.25)
         width_ratios = list([1]) + list([0.1]) * slider_nb
         gs = self.fig.add_gridspec(ncols=1, nrows=1 + slider_nb, height_ratios=width_ratios)
         self.axes = [self.fig.add_subplot(gs[i,0]) for i in range(1 + slider_nb)]
         if self.data.ndim == 2:
-            self.axes[0].imshow(self.data)
+            self.axes[0].imshow(self.data, vmin=np.nanpercentile(self.data, 5), vmax=np.nanpercentile(self.data, 95))
         else: raise NotImplementedError('not implemented for a cube')
 
         self.fig.canvas.mpl_connect('motion_notify_event', self.mouse_onmove)
@@ -193,22 +229,14 @@ class Viewer(Base):
         self.sliders = list()
         for key in self.p.keys():
             if self.p[key][1] is not None:
-                islider = Slider(self.axes[iindex], key,
-                                 self.p[key][1], self.p[key][2],
-                                 valinit=self.p[key][0])
-                islider.on_changed(self.sliders_onchanged)
-                self.sliders.append(islider)
+                self.sliders.append(Slider(self.axes[iindex], key, self.p))
                 iindex += 1
         
         pl.show()
-
-    def sliders_onchanged(self, val):
-        for islider in self.sliders:
-            islider.val)
         
         
     def mouse_onmove(self, event):
-        if event.button is MouseButton.LEFT:
+        if event.button is matplotlib.backend_bases.MouseButton.LEFT:
             if event.inaxes is self.axes[0]:
                 if event.xdata is not None and event.ydata is not None:
                     self.setp('center', np.array((int(event.xdata),int(event.ydata))))

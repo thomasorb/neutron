@@ -1,0 +1,6 @@
+def envelope(n, a, d, s, r):
+    x = np.arange(n, dtype=float) / n
+    attack = np.clip(x/a, 0, 1)
+    decay = np.clip((1.-s) * (1.-((x-a)/d)), 0, (1-s)) + s
+    release = np.clip((-x+1)/r, 0, 1)
+    return attack * decay * release
