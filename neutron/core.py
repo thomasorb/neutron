@@ -18,7 +18,10 @@ NCHANNELS = 2
 
 class Machine(object):
 
-    def __init__(self, path):
+    def __init__(self, path, dfpath=None):
+
+        if dfpath is None:
+            dfpath = path
 
         self.mgr = multiprocessing.Manager()
         self.p = self.mgr.dict()
@@ -35,7 +38,7 @@ class Machine(object):
         self.viewer_process = multiprocessing.Process(
             name='viewer', 
             target=Viewer, 
-            args=(path, self.p))
+            args=(dfpath, self.p))
 
         self.viewer_process.start()
 
@@ -103,22 +106,22 @@ class Worms(Base):
 class Player(Base):
 
     def __init__(self, path, p, sample_width=2):
-        self.data = pyfits.open(path)[0].data
+        self.data = pyfits.open(path)[0].data.T
         self.shape = np.array(self.data.shape)
         self.data_sub = self.data.flatten()
         np.random.shuffle(self.data_sub)
-        self.data_sub = self.data_sub[:int(0.02*self.data_sub.size)]
+        self.data_sub = self.data_sub[:int(0.002*self.data_sub.size)]
         print(self.data_sub.shape)
         
         self.p = p
-        self.p['harm_number'] = (5, 1, 20, int)
-        self.p['harm_step'] = (30, 1, 100, int)
+        self.p['harm_number'] = (1, 1, 20, int)
+        self.p['harm_step'] = (100, 10, 300, int)
         self.p['center'] = ((self.shape / 2).astype(int), None, None, None)
-        self.p['size'] = (60, 1, 200, int)
+        self.p['size'] = (10, 1, 30, int)
         self.p['stop'] = (False, None, None, None)
         self.p['worm_move_scale'] = (10, 1, 100, int)
         self.p['harm_scale'] = (0., -2., 2., float)
-        self.p['norm_perc_scale'] = (2, 0, 5, float)
+        self.p['norm_perc_scale'] = (4, 0, 7, float)
         self.old_norm_perc_scale = None
         self.get_norm()
         
@@ -129,12 +132,28 @@ class Player(Base):
         self.play()
                 
         
-    def _get_box(self, pos, size):
+    def _get_box(self, pos, size, harm):
+        def transform(a, shift):
+            a -= np.mean(a)
+            b = np.fft.fft(a, n=shift*a.size)
+            b = b[b.size//8:b.size//3].real
+            return b
+        
         if len(pos) != self.data.ndim:
             raise Exception('center must be a tuple of length {}'.format(self.data.ndim))
         center = np.clip(pos, size, self.shape - size)
-        slices = tuple([slice(c - size, c + size + 1) for c in center])
-        box = self.data.__getitem__(slices).flatten()
+        print(center)
+        if self.data.ndim == 3:
+            box = self.data[center[0]-size:center[0]+size+1,
+                            center[1]-size:center[1]+size+1,10:-10]
+            box = np.mean(np.mean(box, axis=0), axis=0)
+            
+        else:
+            slices = tuple([slice(c - size, c + size + 1) for c in center])
+            box = self.data.__getitem__(slices)
+            box = box.flatten()
+        
+        box = transform(box, harm)
         return box
 
     def get_norm(self):
@@ -150,11 +169,11 @@ class Player(Base):
         boxes = list()
         nharm = len(centers) // NCHANNELS
         for ichan in range(NCHANNELS):
-            box = self._get_box(centers[ichan*nharm], s)
+            box = self._get_box(centers[ichan*nharm], s, self.getp('harm_step'))
             for i in range(1, nharm):
                 iscale = (nharm - i)/nharm * (1-harm_scale) + harm_scale
                 box += (self._get_box(
-                    centers[i+ichan*nharm], s + i * self.getp('harm_step'))[:box.size]) * iscale
+                    centers[i+ichan*nharm], s, self.getp('harm_step') * 2**i)[:box.size]) * iscale
             box /= self.get_norm()
 
             box -= np.mean(box)
@@ -203,7 +222,7 @@ class Viewer(Base):
 
 
     def __init__(self, path, p):
-        self.data = pyfits.open(path)[0].data
+        self.data = pyfits.open(path)[0].data.T
         self.p = p
         self.show()
         
@@ -220,7 +239,7 @@ class Viewer(Base):
         self.axes = [self.fig.add_subplot(gs[i,0]) for i in range(1 + slider_nb)]
         if self.data.ndim == 2:
             self.axes[0].imshow(self.data, vmin=np.nanpercentile(self.data, 5), vmax=np.nanpercentile(self.data, 95))
-        else: raise NotImplementedError('not implemented for a cube')
+        else: raise NotImplementedError('not implemented')
 
         self.fig.canvas.mpl_connect('motion_notify_event', self.mouse_onmove)
 
@@ -239,6 +258,9 @@ class Viewer(Base):
         if event.button is matplotlib.backend_bases.MouseButton.LEFT:
             if event.inaxes is self.axes[0]:
                 if event.xdata is not None and event.ydata is not None:
-                    self.setp('center', np.array((int(event.xdata),int(event.ydata))))
+                    center = self.getp('center')
+                    center[0] = int(event.xdata)
+                    center[1] = int(event.ydata)
+                    self.setp('center', center)
                     
     
