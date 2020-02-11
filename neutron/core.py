@@ -16,22 +16,42 @@ print(sd.query_devices())
 import mido
 print(mido.get_input_names())
 
+
 NCHANNELS = 2
+BUFFERSIZE = 2000
+MAXNOTES = 10
 
 class Machine(object):
 
-    def __init__(self, path, dfpath=None):
+    def __init__(self, cubepath, dfpath):
 
-        if dfpath is None:
-            dfpath = path
-
+        self.data = pyfits.open(cubepath)[0].data.T
+        self.shape = np.array(self.data.shape)
+        
+        
         self.mgr = multiprocessing.Manager()
         self.p = self.mgr.dict()
+        self.p['harm_number'] = (1, 1, 20, int)
+        self.p['harm_step'] = (2, 1, 15, int)
+        self.p['center'] = ((self.shape / 2).astype(int), None, None, None)
+        self.p['size'] = (10, 1, 30, int)
+        self.p['stop'] = (False, None, None, None)
+        self.p['worm_move_scale'] = (3, 1, 50, int)
+        self.p['harm_scale'] = (0., -2., 2., float)
+        self.p['norm_perc_scale'] = (4, 0, 7, float)
+        self.p['shift'] = (600,100,1000, int)
+        self.p['norm'] = (None, None, None, None)
+        for i in range(MAXNOTES):
+            self.p[str(i)] = (False, None, None, None)
+        for i in range(MAXNOTES):
+            self.p[str(i) + 'out'] = (None, None, None, None)
+
+            
         
         self.player_process = multiprocessing.Process(
             name='player', 
             target=Player, 
-            args=(path, self.p))
+            args=(self.data, self.p))
 
 
         self.player_process.start()
@@ -46,9 +66,9 @@ class Machine(object):
         self.viewer_process.start()
 
         self.midi_process = multiprocessing.Process(
-            name='midi', 
+            name='midi',
             target=Midi, 
-            args=(self.p,))
+            args=(self.p, self.data))
 
         self.midi_process.start()
 
@@ -116,8 +136,11 @@ class Worms(Base):
     
 class Player(Base):
 
-    def __init__(self, path, p, sample_width=2):
-        self.data = pyfits.open(path)[0].data.T
+    def __init__(self, data, p, sample_width=2):
+        self.stream = sd.OutputStream(dtype=np.int16, channels=NCHANNELS)
+        self.stream.start()
+
+        self.data = data
         self.shape = np.array(self.data.shape)
         self.data_sub = self.data.flatten()
         np.random.shuffle(self.data_sub)
@@ -125,100 +148,32 @@ class Player(Base):
         print(self.data_sub.shape)
         
         self.p = p
-        self.p['harm_number'] = (1, 1, 20, int)
-        self.p['harm_step'] = (2, 1, 15, int)
-        self.p['center'] = ((self.shape / 2).astype(int), None, None, None)
-        self.p['size'] = (10, 1, 30, int)
-        self.p['stop'] = (False, None, None, None)
-        self.p['worm_move_scale'] = (10, 1, 100, int)
-        self.p['harm_scale'] = (0., -2., 2., float)
-        self.p['norm_perc_scale'] = (4, 0, 7, float)
-        self.p['note'] = (60,0,1000, int) # C = 60
-        self.p['shift'] = (500,100,1000, int) 
-        self.p['noteon'] = (False, None, None, None)
+        
         self.old_norm_perc_scale = None
-        self.get_norm()
         
-        self.worms = Worms(self.p)
-        
-        self.stream = sd.OutputStream(dtype=np.int16, channels=NCHANNELS)
-        self.stream.start()
-        self.play()
-                
-        
-    def _get_box(self, pos, size, harm):
-        def transform(a, shift):
-            a -= np.mean(a)
-            b = np.fft.fft(a, n=shift*a.size)
-            b = b[b.size//8:b.size//3].real
-            return b
-        
-        if len(pos) != self.data.ndim:
-            raise Exception('center must be a tuple of length {}'.format(self.data.ndim))
-        center = np.clip(pos, size, self.shape - size)
-        print(center)
-        if self.data.ndim == 3:
-            box = self.data[center[0]-size:center[0]+size+1,
-                            center[1]-size:center[1]+size+1,10:-10]
-            box = np.mean(np.mean(box, axis=0), axis=0)
-            
-        else:
-            slices = tuple([slice(c - size, c + size + 1) for c in center])
-            box = self.data.__getitem__(slices)
-            box = box.flatten()
-        
-        box = transform(box, harm)
-        return box
-
-    def get_norm(self):
-        if float(self.getp('norm_perc_scale')) != self.old_norm_perc_scale:
-            self.norm = np.nanpercentile(self.data_sub, 100-10**(1-self.getp('norm_perc_scale')))
-            self.old_norm_perc_scale = float(self.getp('norm_perc_scale'))
-        return self.norm
-            
-    def get_sample(self):
-        s = int(self.getp('size'))
-        harm_scale = self.getp('harm_scale')
-        note = self.getp('note')
-        shift = self.getp('shift')
-        harm_step = shift / 2**((note)/ 12) * self.getp('harm_step')
-        centers = self.worms.get()
-        boxes = list()
-        nharm = len(centers) // NCHANNELS
-        for ichan in range(NCHANNELS):
-            box = self._get_box(centers[ichan*nharm], s, harm_step)
-            for i in range(1, nharm):
-                iscale = (nharm - i)/nharm * (1-harm_scale) + harm_scale
-                box += (self._get_box(
-                    centers[i+ichan*nharm], s, harm_step * 2**i)[:box.size]) * iscale
-            box /= self.get_norm()
-
-            box -= np.mean(box)
-            box *= neutron.utils.envelope(box.size, 0.01, 0, 1, 0.)
-            boxes.append(box)
-        return np.array(boxes).T
-        
-    def play_sample(self):
-        sample = self.get_sample()
-        # nmix = int(sample.shape[0]*0.05)
-        
-        # if hasattr(self, 'next_sample'):
-        #     if self.next_sample.size == nmix:
-        #         sample[:nmix] *= np.atleast_2d(neutron.utils.envelope(nmix,1,0,0,0)).T
-        #         sample[:nmix] += self.next_sample * np.atleast_2d(neutron.utils.envelope(nmix,0,1,0,0)).T
-            
-
-        # self.next_sample = sample[-nmix:]
-        # sample = sample[:-nmix]
-        
-        sample *= 2**15 - 1
-        sample = np.ascontiguousarray(sample.astype(np.int16))
-        self.stream.write(sample)
-
-    def play(self):
         while True:
-            if self.getp('noteon'):
-                self.play_sample()
+            time.sleep(0.0001)
+            self.reset_norm()
+            sample = np.zeros((BUFFERSIZE, NCHANNELS), dtype=float)
+            #stime = time.time()
+            for i in range(MAXNOTES):
+                iout = str(i) + 'out'
+                if self.getp(iout) is not None:
+                    sample += self.getp(iout)
+                    self.setp(iout, None)
+            #print(time.time() - stime)
+            if sample[0,0] != 0.:
+                sample *= 2**15 - 1
+                sample = np.ascontiguousarray(sample.astype(np.int16))
+                self.stream.write(sample)
+
+    
+    def reset_norm(self):
+        if float(self.getp('norm_perc_scale')) != self.old_norm_perc_scale:
+            norm = np.nanpercentile(self.data_sub, 100-10**(1-self.getp('norm_perc_scale')))
+            self.old_norm_perc_scale = float(self.getp('norm_perc_scale'))
+            self.setp('norm', norm)
+            
         
 
 class Slider(Base):
@@ -281,22 +236,116 @@ class Viewer(Base):
                     center[1] = int(event.ydata)
                     self.setp('center', center)
                     
+
+
+class Sound(Base):
     
+    def __init__(self, p, msg, data, channel):
+        self.p = p
+        self.data = data
+        self.shape = np.array(self.data.shape)
+        
+        self.msg = msg
+        self.worms = Worms(self.p)
+        key_note = str(channel)
+        key_noteout = str(channel) + 'out'
+        
+        print('start', self.msg)
+        sample = None
+        while self.getp(key_note):
+            time.sleep(0.01)
+            if self.getp(key_noteout) is None:
+                if sample is None:
+                    sample = self.get_sample()
+        
+                while sample.shape[0] <= BUFFERSIZE:
+                    sample = np.concatenate((sample, self.get_sample()))
+                        
+                self.setp(key_noteout, sample[:BUFFERSIZE,:])
+                sample = sample[BUFFERSIZE:,:]
+        
+                
+            
+        print('end', self.msg)
+
+    def _get_box(self, pos, size, harm):
+        def transform(a, shift):
+            a -= np.mean(a)
+            b = np.fft.fft(a, n=shift*a.size)
+            b = b[b.size//8:b.size//3].real
+            return b
+        
+        if len(pos) != self.data.ndim:
+            raise Exception('center must be a tuple of length {}'.format(self.data.ndim))
+        center = np.clip(pos, size, self.shape - size)
+        if self.data.ndim == 3:
+            box = self.data[center[0]-size:center[0]+size+1,
+                            center[1]-size:center[1]+size+1,10:-10]
+            #box = np.mean(np.mean(box, axis=0), axis=0)
+            box = np.median(box, axis=(0,1))
+            
+        else:
+            slices = tuple([slice(c - size, c + size + 1) for c in center])
+            box = self.data.__getitem__(slices)
+            box = box.flatten()
+        
+        box = transform(box, harm)
+        return box
+
+    def get_sample(self):
+        s = int(self.getp('size'))
+        harm_scale = self.getp('harm_scale')
+        note = self.msg.note
+        shift = self.getp('shift')
+        harm_step = shift / 2**((note) / 12) * 2#self.getp('harm_step')
+        centers = self.worms.get()
+        boxes = list()
+        norm = self.getp('norm')
+        nharm = len(centers) // NCHANNELS
+        for ichan in range(NCHANNELS):
+            box = self._get_box(centers[ichan*nharm], s, harm_step)
+            for i in range(1, nharm):
+                iscale = (nharm - i)/nharm * (1-harm_scale) + harm_scale
+                box += (self._get_box(
+                    centers[i+ichan*nharm], s, harm_step * 2**i)[:box.size]) * iscale
+            box /= norm
+
+            box -= np.median(box)
+            #box *= neutron.utils.envelope(box.size, 0.1, 0, 1, 0.)
+            boxes.append(box)
+        return np.array(boxes).T
+
+
+
 class Midi(Base):
 
-    def __init__(self, p):
+    def __init__(self, p, data):
         self.p = p
+        self.data = data
 
         self.inport = mido.open_input('VMPK Output:VMPK Output 128:0')
+        self.sounds = dict()
         
         for msg in self.inport:
-            print(msg)
-            print(msg.note)
-            self.setp('note', msg.note)
+            time.sleep(0.001)
             if msg.type == 'note_on':
-                self.setp('noteon', True)
+                for i in range(MAXNOTES):
+                    if self.getp(str(i)) is False:
+                        self.setp(str(i), True)
+                
+                        self.sounds[msg.note] = (
+                            multiprocessing.Process(
+                                name='sound', 
+                                target=Sound, 
+                                args=(self.p, msg, self.data, i)),
+                            str(i))
+                        
+                        self.sounds[msg.note][0].start()
+                        break
+                    
             else:
-                self.setp('noteon', False)
+                self.setp(self.sounds[msg.note][1], False)
+                    
                 
     def __del__(self):
         try:
