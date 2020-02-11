@@ -11,8 +11,10 @@ import matplotlib.widgets
 import time
 import neutron.utils
 print(sd.query_devices())
-sd.default.samplerate = 48000
-sd.default.device = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
+#sd.default.samplerate = 44100
+#sd.default.device = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
+import mido
+print(mido.get_input_names())
 
 NCHANNELS = 2
 
@@ -40,13 +42,22 @@ class Machine(object):
             target=Viewer, 
             args=(dfpath, self.p))
 
+        
         self.viewer_process.start()
 
+        self.midi_process = multiprocessing.Process(
+            name='midi', 
+            target=Midi, 
+            args=(self.p,))
+
+        self.midi_process.start()
 
         self.viewer_process.join()
-        self.player_process.join()
+        self.player_process.join()        
+        self.midi_process.join()
         
-
+        
+        
 class Base(object):
 
     def getp(self, key):
@@ -115,13 +126,16 @@ class Player(Base):
         
         self.p = p
         self.p['harm_number'] = (1, 1, 20, int)
-        self.p['harm_step'] = (100, 10, 300, int)
+        self.p['harm_step'] = (2, 1, 15, int)
         self.p['center'] = ((self.shape / 2).astype(int), None, None, None)
         self.p['size'] = (10, 1, 30, int)
         self.p['stop'] = (False, None, None, None)
         self.p['worm_move_scale'] = (10, 1, 100, int)
         self.p['harm_scale'] = (0., -2., 2., float)
         self.p['norm_perc_scale'] = (4, 0, 7, float)
+        self.p['note'] = (60,0,1000, int) # C = 60
+        self.p['shift'] = (500,100,1000, int) 
+        self.p['noteon'] = (False, None, None, None)
         self.old_norm_perc_scale = None
         self.get_norm()
         
@@ -165,15 +179,18 @@ class Player(Base):
     def get_sample(self):
         s = int(self.getp('size'))
         harm_scale = self.getp('harm_scale')
+        note = self.getp('note')
+        shift = self.getp('shift')
+        harm_step = shift / 2**((note)/ 12) * self.getp('harm_step')
         centers = self.worms.get()
         boxes = list()
         nharm = len(centers) // NCHANNELS
         for ichan in range(NCHANNELS):
-            box = self._get_box(centers[ichan*nharm], s, self.getp('harm_step'))
+            box = self._get_box(centers[ichan*nharm], s, harm_step)
             for i in range(1, nharm):
                 iscale = (nharm - i)/nharm * (1-harm_scale) + harm_scale
                 box += (self._get_box(
-                    centers[i+ichan*nharm], s, self.getp('harm_step') * 2**i)[:box.size]) * iscale
+                    centers[i+ichan*nharm], s, harm_step * 2**i)[:box.size]) * iscale
             box /= self.get_norm()
 
             box -= np.mean(box)
@@ -183,16 +200,16 @@ class Player(Base):
         
     def play_sample(self):
         sample = self.get_sample()
-        nmix = int(sample.shape[0]*0.05)
-        if hasattr(self, 'next_sample'):
-            if self.next_sample.size == nmix:
-                sample[:nmix] *= np.atleast_2d(neutron.utils.envelope(nmix,1,0,0,0)).T
-                sample[:nmix] += self.next_sample * np.atleast_2d(neutron.utils.envelope(nmix,0,1,0,0)).T
+        # nmix = int(sample.shape[0]*0.05)
+        
+        # if hasattr(self, 'next_sample'):
+        #     if self.next_sample.size == nmix:
+        #         sample[:nmix] *= np.atleast_2d(neutron.utils.envelope(nmix,1,0,0,0)).T
+        #         sample[:nmix] += self.next_sample * np.atleast_2d(neutron.utils.envelope(nmix,0,1,0,0)).T
             
 
-        self.next_sample = sample[-nmix:]
-        sample = sample[:-nmix]
-        
+        # self.next_sample = sample[-nmix:]
+        # sample = sample[:-nmix]
         
         sample *= 2**15 - 1
         sample = np.ascontiguousarray(sample.astype(np.int16))
@@ -200,7 +217,8 @@ class Player(Base):
 
     def play(self):
         while True:
-            self.play_sample()
+            if self.getp('noteon'):
+                self.play_sample()
         
 
 class Slider(Base):
@@ -264,3 +282,23 @@ class Viewer(Base):
                     self.setp('center', center)
                     
     
+class Midi(Base):
+
+    def __init__(self, p):
+        self.p = p
+
+        self.inport = mido.open_input('VMPK Output:VMPK Output 128:0')
+        
+        for msg in self.inport:
+            print(msg)
+            print(msg.note)
+            self.setp('note', msg.note)
+            if msg.type == 'note_on':
+                self.setp('noteon', True)
+            else:
+                self.setp('noteon', False)
+                
+    def __del__(self):
+        try:
+            self.inport.close()
+        except: pass
