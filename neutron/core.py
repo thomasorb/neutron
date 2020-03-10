@@ -29,6 +29,8 @@ else:
     raise Exception('bad DEPTH')
     
 sd.default.samplerate = SAMPLERATE
+sd.default.latency = 'low'
+
 #sd.default.device = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
 sd.default.device = 'Steinberg UR22mkII: USB Audio (hw:1,0)'
 
@@ -162,14 +164,16 @@ class Worms(Base):
 class Player(Base):
 
     def __init__(self, data, p, sample_width=2):
-        
+
+        print('starting player')
         self.data = data
         self.shape = np.array(self.data.shape)
-        self.data_sub = self.data.flatten()
-        np.random.shuffle(self.data_sub)
-        self.data_sub = self.data_sub[:int(0.002*self.data_sub.size)]
-        print(self.data_sub.shape)
-        
+        self.data_max = np.max(self.data)
+        print('data loaded')
+        #self.data_sub = self.data.flatten()
+        #np.random.shuffle(self.data_sub)
+        #self.data_sub = self.data_sub[:int(0.0002*self.data_sub.size)]
+        #print(self.data_sub.shape)
         self.p = p
         
         self.old_norm_perc_scale = None
@@ -210,9 +214,11 @@ class Player(Base):
         
         
     def reset_norm(self):
-        if float(self.getp('norm_perc_scale')) != self.old_norm_perc_scale:
-            norm = np.nanpercentile(self.data_sub, 100-10**(1-self.getp('norm_perc_scale')))
-            self.old_norm_perc_scale = float(self.getp('norm_perc_scale'))
+        norm_perc_scale = float(self.getp('norm_perc_scale'))
+        if norm_perc_scale != self.old_norm_perc_scale:
+            norm = self.data_max * 1.-10**(1-norm_perc_scale)
+            print('norm:', norm)
+            self.old_norm_perc_scale = norm_perc_scale
             self.setp('norm', norm)
             
         
@@ -309,8 +315,9 @@ class Sound(Base):
         stime = None
         release = self.getp('release')
         attack = self.getp('attack')
+        
         while not stop:
-            time.sleep(0.001)
+            time.sleep(BUFFERSIZE/float(SAMPLERATE)/10.)
 
             # if nothing on the output feed it 
             if self.getp(key_noteout) is None:
@@ -323,7 +330,7 @@ class Sound(Base):
                         (sample.shape[0],1))
             
                     
-                while sample.shape[0] <= max(release * SAMPLERATE, BUFFERSIZE) * 2:
+                while sample.shape[0] <= max(release * SAMPLERATE, BUFFERSIZE) + BUFFERSIZE * 2.:
                     sample = np.concatenate((sample, self.get_sample()))
 
                 if not self.getp(key_note): # not off, starting release
