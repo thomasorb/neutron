@@ -1,5 +1,6 @@
 import astropy.io.fits as pyfits
 import numpy as np
+import scipy.fftpack
 #import pyaudio
 import sounddevice as sd
 import wave
@@ -8,18 +9,38 @@ import pylab as pl
 import multiprocessing
 import matplotlib.backend_bases
 import matplotlib.widgets
+import matplotlib.animation
 import time
 import neutron.utils
 print(sd.query_devices())
-#sd.default.samplerate = 44100
+
+SAMPLERATE = 44100
+NCHANNELS = 2
+BUFFERSIZE = 2000
+MAX_NOTECHANNELS = 10
+DEPTH = 32
+if DEPTH == 32:
+    CAST = np.int32
+elif DEPTH == 16:
+    CAST = np.int16
+elif DEPTH == 8:
+    CAST = np.int8
+else:
+    raise Exception('bad DEPTH')
+    
+sd.default.samplerate = SAMPLERATE
 #sd.default.device = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
+sd.default.device = 'Steinberg UR22mkII: USB Audio (hw:1,0)'
+
+#USB_IN = 'VMPK Output:VMPK Output 128:0'
+USB_IN = 'CASIO USB-MIDI:CASIO USB-MIDI MIDI 1 24:0'
+# pulseaudio -k && sudo alsa force-reload
+
+
 import mido
 print(mido.get_input_names())
 
 
-NCHANNELS = 2
-BUFFERSIZE = 2000
-MAXNOTES = 10
 
 class Machine(object):
 
@@ -35,16 +56,20 @@ class Machine(object):
         self.p['harm_step'] = (2, 1, 15, int)
         self.p['center'] = ((self.shape / 2).astype(int), None, None, None)
         self.p['size'] = (10, 1, 30, int)
-        self.p['stop'] = (False, None, None, None)
         self.p['worm_move_scale'] = (3, 1, 50, int)
         self.p['harm_scale'] = (0., -2., 2., float)
-        self.p['norm_perc_scale'] = (4, 0, 7, float)
+        self.p['norm_perc_scale'] = (4, 1, 7, float)
         self.p['shift'] = (600,100,1000, int)
         self.p['norm'] = (None, None, None, None)
-        for i in range(MAXNOTES):
-            self.p[str(i)] = (False, None, None, None)
-        for i in range(MAXNOTES):
+        self.p['attack'] = (0.1, 0, 1, float)
+        self.p['release'] = (0.5, 0, 5, float)
+        for i in range(MAX_NOTECHANNELS):
+            self.p[str(i)] = (None, None, None, None)
+        for i in range(MAX_NOTECHANNELS):
             self.p[str(i) + 'out'] = (None, None, None, None)
+        
+        self.p['out'] = (None, None, None, None)
+        
 
             
         
@@ -137,9 +162,7 @@ class Worms(Base):
 class Player(Base):
 
     def __init__(self, data, p, sample_width=2):
-        self.stream = sd.OutputStream(dtype=np.int16, channels=NCHANNELS)
-        self.stream.start()
-
+        
         self.data = data
         self.shape = np.array(self.data.shape)
         self.data_sub = self.data.flatten()
@@ -150,24 +173,42 @@ class Player(Base):
         self.p = p
         
         self.old_norm_perc_scale = None
+    
+        with sd.OutputStream(
+                dtype=CAST, channels=NCHANNELS,
+                callback=self.callback, blocksize=BUFFERSIZE,
+                latency='low'):
         
-        while True:
-            time.sleep(0.0001)
+            while True:
+                time.sleep(0.00001)
+                
+    def callback(self, outdata, frames, time, status):
+        if status:
+            print('callback status:', status)
+
+        try:
             self.reset_norm()
+        
             sample = np.zeros((BUFFERSIZE, NCHANNELS), dtype=float)
             #stime = time.time()
-            for i in range(MAXNOTES):
+            for i in range(MAX_NOTECHANNELS):
                 iout = str(i) + 'out'
                 if self.getp(iout) is not None:
                     sample += self.getp(iout)
                     self.setp(iout, None)
             #print(time.time() - stime)
             if sample[0,0] != 0.:
-                sample *= 2**15 - 1
-                sample = np.ascontiguousarray(sample.astype(np.int16))
-                self.stream.write(sample)
-
+                
+                sample *= 2**(DEPTH-2) - 1
+                sample = np.ascontiguousarray(sample.astype(CAST))
+                self.setp('out', sample)
+                #self.stream.write(sample)
+            outdata[:] = sample
     
+        except Exception as err:
+            print('callback error', err)
+        
+        
     def reset_norm(self):
         if float(self.getp('norm_perc_scale')) != self.old_norm_perc_scale:
             norm = np.nanpercentile(self.data_sub, 100-10**(1-self.getp('norm_perc_scale')))
@@ -207,9 +248,9 @@ class Viewer(Base):
         for key in self.p.keys():
             if self.p[key][1] is not None:
                 slider_nb += 1
-        width_ratios = list([1]) + list([0.1]) * slider_nb
-        gs = self.fig.add_gridspec(ncols=1, nrows=1 + slider_nb, height_ratios=width_ratios)
-        self.axes = [self.fig.add_subplot(gs[i,0]) for i in range(1 + slider_nb)]
+        height_ratios = list([1]) + list([0.1]) * slider_nb + list([0.2])
+        gs = self.fig.add_gridspec(ncols=1, nrows=2 + slider_nb, height_ratios=height_ratios)
+        self.axes = [self.fig.add_subplot(gs[i,0]) for i in range(2 + slider_nb)]
         if self.data.ndim == 2:
             self.axes[0].imshow(self.data, vmin=np.nanpercentile(self.data, 5), vmax=np.nanpercentile(self.data, 95))
         else: raise NotImplementedError('not implemented')
@@ -223,9 +264,21 @@ class Viewer(Base):
             if self.p[key][1] is not None:
                 self.sliders.append(Slider(self.axes[iindex], key, self.p))
                 iindex += 1
-        
+
+        self.graph, = self.axes[-1].plot(np.zeros(BUFFERSIZE))
+        self.axes[-1].set_ylim((-2**DEPTH, 2**DEPTH))
+        ani = matplotlib.animation.FuncAnimation(self.fig,
+                                      self.update_graph,
+                                      interval=10,
+                                      blit=True)
+
         pl.show()
-        
+
+    def update_graph(self, arg):
+        out = self.getp('out')
+        if out is not None:
+            self.graph.set_ydata(out[:,0])
+        return self.graph,
         
     def mouse_onmove(self, event):
         if event.button is matplotlib.backend_bases.MouseButton.LEFT:
@@ -247,47 +300,73 @@ class Sound(Base):
         
         self.msg = msg
         self.worms = Worms(self.p)
-        key_note = str(channel)
-        key_noteout = str(channel) + 'out'
+        key_note = channel
+        key_noteout = channel + 'out'
         
-        print('start', self.msg)
         sample = None
-        while self.getp(key_note):
-            time.sleep(0.01)
+
+        stop = False
+        stime = None
+        release = self.getp('release')
+        attack = self.getp('attack')
+        while not stop:
+            time.sleep(0.001)
+
+            # if nothing on the output feed it 
             if self.getp(key_noteout) is None:
+                
                 if sample is None:
                     sample = self.get_sample()
-        
-                while sample.shape[0] <= BUFFERSIZE:
-                    sample = np.concatenate((sample, self.get_sample()))
-                        
-                self.setp(key_noteout, sample[:BUFFERSIZE,:])
-                sample = sample[BUFFERSIZE:,:]
-        
-                
+                    sample *= np.reshape(
+                        neutron.utils.envelope(
+                            sample.shape[0], (attack * SAMPLERATE)/sample.shape[0], 0, 1, 0.),
+                        (sample.shape[0],1))
             
-        print('end', self.msg)
+                    
+                while sample.shape[0] <= max(release * SAMPLERATE, BUFFERSIZE) * 2:
+                    sample = np.concatenate((sample, self.get_sample()))
 
+                if not self.getp(key_note): # not off, starting release
+                    
+                    if stime is None:
+                        stime = time.time()
+                        while sample.shape[0] <= release * SAMPLERATE + BUFFERSIZE:
+                            sample = np.concatenate((sample, self.get_sample()))
+                            
+                        releasef = 1 - np.arange(sample.shape[0], dtype=float) / (release * SAMPLERATE)
+                        releasef = np.reshape(np.where(releasef > 0, releasef, 0), (sample.shape[0], 1))
+                        sample *= releasef
+                        
+                    
+                    if time.time() - stime > release:
+                        stop = True
+
+                if not stop and sample is not None:
+                    if sample.shape[0] > BUFFERSIZE:
+                        last_sample = sample[:BUFFERSIZE,:] * msg.velocity / 64.
+                        #print(last_sample[:-5,:])
+                        self.setp(key_noteout, last_sample)
+                        sample = sample[BUFFERSIZE:,:]
+            
+        self.setp(key_note, None)
+        
     def _get_box(self, pos, size, harm):
         def transform(a, shift):
             a -= np.mean(a)
-            b = np.fft.fft(a, n=shift*a.size)
-            b = b[b.size//8:b.size//3].real
+            #b = scipy.fftpack.fft(a, n=int(shift*a.size))
+            b = np.fft.fft(a, n=int(shift*a.size))
+            b = b[b.size//20:-b.size//20].real
             return b
         
         if len(pos) != self.data.ndim:
             raise Exception('center must be a tuple of length {}'.format(self.data.ndim))
         center = np.clip(pos, size, self.shape - size)
-        if self.data.ndim == 3:
-            box = self.data[center[0]-size:center[0]+size+1,
-                            center[1]-size:center[1]+size+1,10:-10]
-            #box = np.mean(np.mean(box, axis=0), axis=0)
-            box = np.median(box, axis=(0,1))
-            
-        else:
-            slices = tuple([slice(c - size, c + size + 1) for c in center])
-            box = self.data.__getitem__(slices)
-            box = box.flatten()
+        box = self.data[center[0]-size:center[0]+size+1,
+                        center[1]-size:center[1]+size+1,100:-100]
+        #box = np.mean(np.mean(box, axis=0), axis=0)
+        #box = np.median(box, axis=(0,1))
+        box = np.min(box, axis=(0,1))
+        #box = np.nanpercentile(box, 30, axis=(0,1))
         
         box = transform(box, harm)
         return box
@@ -310,10 +389,17 @@ class Sound(Base):
                     centers[i+ichan*nharm], s, harm_step * 2**i)[:box.size]) * iscale
             box /= norm
 
-            box -= np.median(box)
+            
+            #box = box**(1/3)
+            #box -= np.mean(box)
             #box *= neutron.utils.envelope(box.size, 0.1, 0, 1, 0.)
             boxes.append(box)
-        return np.array(boxes).T
+        
+        boxes = np.array(boxes).T
+        return boxes
+        
+        #print('gtep')
+        #return neutron.utils.loop(boxes, self.getp('sample_size'), start=boxes.shape[0]//4, end=boxes.shape[0]//4, merge=boxes.shape[0]//8)
 
 
 
@@ -323,29 +409,53 @@ class Midi(Base):
         self.p = p
         self.data = data
 
-        self.inport = mido.open_input('VMPK Output:VMPK Output 128:0')
-        self.sounds = dict()
-        
+        self.inport = mido.open_input(USB_IN)
+        self.sounds = list()
+        self.notes = dict()
+        for i in range(256):
+            self.notes[i] = None
+
+        clean_index = 0
         for msg in self.inport:
+            print(msg)
+            clean_index += 1
+            if clean_index > 10:
+                for isound in self.sounds:
+                    if not isound[0].is_alive():
+                        del isound
+                    
+                clean_index = 0
+                
             time.sleep(0.001)
             if msg.type == 'note_on':
-                for i in range(MAXNOTES):
-                    if self.getp(str(i)) is False:
-                        self.setp(str(i), True)
+                if self.notes[msg.note] is not None: continue
                 
-                        self.sounds[msg.note] = (
-                            multiprocessing.Process(
+                for i in range(MAX_NOTECHANNELS):
+                    ichannel = str(i)
+                    
+                    # None : channel released
+                    # False : note off
+                    # True : note on
+                    if self.getp(ichannel) is None:
+                        self.notes[msg.note] = ichannel
+                
+                        self.setp(ichannel, True)
+                        self.sounds.append(
+                            (multiprocessing.Process(
                                 name='sound', 
-                                target=Sound, 
-                                args=(self.p, msg, self.data, i)),
-                            str(i))
+                                target=Sound,
+                                args=(self.p, msg, self.data, ichannel)),
+                             msg.note, ichannel))
                         
-                        self.sounds[msg.note][0].start()
+                        self.sounds[-1][0].start()
+                        
                         break
                     
-            else:
-                self.setp(self.sounds[msg.note][1], False)
-                    
+            elif msg.type == 'note_off':
+                if self.notes[msg.note] is None: continue
+                
+                self.setp(self.notes[msg.note], False)
+                self.notes[msg.note] = None
                 
     def __del__(self):
         try:
