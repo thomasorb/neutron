@@ -1,0 +1,173 @@
+import numpy as np
+import scipy.fft
+import multiprocessing
+import time
+
+import sounddevice as sd
+import mido
+
+import warnings
+import logging
+logging.getLogger().setLevel('INFO')
+
+from . import config
+
+class Core(object):
+
+    def __init__(self):
+
+        self.mgr = multiprocessing.Manager()
+
+        self.out = (multiprocessing.Array('f', config.BUFFERSIZE, lock=True),
+                    multiprocessing.Array('f', config.BUFFERSIZE, lock=True))
+        self.notes = multiprocessing.Array('b', np.zeros((256), dtype=bool))
+        self.p = self.mgr.dict()
+        self.p['attack'] = (0.1, 0, 1, float)
+        self.p['release'] = (0.5, 0, 5, float)
+
+
+        self.player_process = multiprocessing.Process(
+            name='player',
+            target=Player, 
+            args=(self.out,))
+
+        self.player_process.start()
+                
+        self.midi_process = multiprocessing.Process(
+            name='midiin',
+            target=MidiIn, 
+            args=(self.out, self.notes, self.p))
+
+        self.midi_process.start()
+
+        self.player_process.join()
+        self.midi_process.join()
+        
+class Base(object):
+
+    def getp(self, key):
+        if self.p[key][1] is not None:
+            return self.p[key][3](np.clip(self.p[key][0], self.p[key][1], self.p[key][2]))
+        return self.p[key][0]
+
+    def setp(self, key, value):
+        vals = list(self.p[key])
+        vals[0] = value
+        self.p[key] = vals
+
+
+class Player(Base):
+
+    def __init__(self, out):
+
+        self.out = out
+        sd.default.device = config.DEVICE
+        sd.default.samplerate = config.SAMPLERATE
+        sd.default.latency = 'low'
+
+        self.last_looptime = 0
+        
+        with sd.OutputStream(
+                dtype=config.CAST, channels=config.NCHANNELS,
+                callback=self.callback, blocksize=config.BUFFERSIZE):
+        
+            while True:
+                time.sleep(0.000001)
+                
+    def callback(self, outdata, frames, time, status):
+        import time
+        stime = time.time()
+        if status:
+            warnings.warn('callback status: {} \n > (callback loop time: {})'.format(status, self.last_looptime))
+
+        try:
+            sample = self.out[0]
+            print(sample[0])
+            #sample = np.array(self.out).T
+            #if sample[0,0] != 0.:
+            #    sample *= 2**(config.DEPTH-2) - 1
+            #    sample = np.ascontiguousarray(sample.astype(config.CAST))
+            #self.out[0][:] = np.zeros(config.BUFFERSIZE, dtype=float)
+            #self.out[1][:] = np.zeros(config.BUFFERSIZE, dtype=float)
+            #outdata[:] = sample
+            
+        except Exception as err:
+            warnings.warn('callback error {}'.format(err))
+        print(self.last_looptime)
+        self.last_looptime = time.time() - stime
+            
+class Sound(Base):
+
+    def __init__(self, out, notes, p, msg):
+
+        self.out = out
+        self.notes = notes
+        self.p = p
+        release = self.getp('release')
+        attack = self.getp('attack')
+        
+        self.velocity = msg.velocity
+        stop = False
+        stime = None
+        logging.debug('start sound {}'.format(msg.note))
+
+        while not stop:
+
+            if not self.notes[int(msg.note)]: # not off, starting release
+                
+                if stime is None:
+                    logging.debug('release sound {}'.format(msg.note))
+
+                    stime = time.time()
+
+                if time.time() - stime > release:
+                    stop = True
+        logging.debug('end sound {}'.format(msg.note))
+
+class MidiIn(Base):
+
+    def __init__(self, out, notes, p):
+
+        logging.info('>> MIDI INPUTS:\n   {}'.format('\n   '.join(mido.get_input_names())))
+        logging.info('>> MIDI INPUT: {}'.format(config.USB_IN))
+        self.inport = mido.open_input(config.USB_IN)
+
+        self.out = out
+        self.notes = notes
+        self.p = p
+
+        self.sounds = list()
+        
+        
+        clean_index = 0
+        for msg in self.inport:    
+            logging.debug('MIDI msg: {}'.format(msg))
+            
+            if msg.type == 'note_on':
+                if self.notes[int(msg.note)]: continue
+                self.notes[int(msg.note)] = 1
+            else:
+                if not self.notes[int(msg.note)]: continue
+                self.notes[int(msg.note)] = 0
+
+            print('>>>>>>>>> run', msg)
+            self.sounds.append(
+                (multiprocessing.Process(
+                    name='sound', 
+                    target=Sound,
+                    args=(self.out, self.notes, self.p, msg)),
+                 msg.note))
+            
+            self.sounds[-1][0].start()
+                        
+            
+            #  process cleaner
+            clean_index += 1
+            if clean_index > 10:
+                for isound in self.sounds:
+                    if not isound[0].is_alive():
+                        del isound
+                        
+                clean_index = 0
+            
+    

@@ -1,0 +1,23 @@
+import numpy as np
+
+SAMPLERATE = 44100
+NCHANNELS = 2
+BUFFERSIZE = 1000
+DEPTH = 32
+if DEPTH == 32:
+    CAST = np.int32
+elif DEPTH == 16:
+    CAST = np.int16
+elif DEPTH == 8:
+    CAST = np.int8
+else:
+    raise Exception('bad DEPTH')
+
+#USB_IN = 'VMPK Output:VMPK Output'
+#USB_IN = 'CASIO USB-MIDI:CASIO USB-MIDI MIDI 1 24:0'
+# pulseaudio -k && sudo alsa force-reload
+USB_IN = 'Midi Through:Midi Through Port-0'
+#USB_IN = 'SuperCollider:out0 129:16'
+
+# DEVICE = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
+DEVICE = 'Steinberg UR22mkII: USB Audio (hw:1,0)'

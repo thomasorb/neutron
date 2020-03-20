@@ -1,0 +1,59 @@
+cimport cython
+import cython
+
+cimport numpy as np
+import numpy as np
+import scipy.fft
+import astropy.io.fits as pyfits
+
+from cpython cimport bool
+
+## Import functions from math.h (faster than python math.py)
+cdef extern from "math.h" nogil:
+    double cos(double theta)
+    double sin(double theta)
+    double exp(double x)
+    double sqrt(double x)
+    double log(double x)
+    double ceil(double x)
+    double floor(double x)
+    double M_PI
+    double isnan(double x)
+
+# define long double for numpy arrays
+ctypedef long double float128_t
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def min_along_z(np.ndarray[np.float32_t, ndim=3] a):
+    
+    cdef int n = a.shape[2]
+    cdef np.ndarray[np.float32_t, ndim=1] b = np.empty(n, dtype=np.float32)
+    cdef int i, j, k, si, sj
+    cdef float minval
+    si = a.shape[0]
+    sj = a.shape[1]
+    with nogil:
+        for ik in range(n):
+            minval = a[0,0,ik]
+            for ii in range(si):
+                for ij in range(sj):
+                    if a[ii,ij,ik] < minval:
+                        minval = a[ii,ij,ik]
+            b[ik] = minval
+    return b
+    
+
+def transform(np.ndarray[np.float32_t, ndim=3] a, double shift):
+    
+    cdef int n = <int> shift * a.shape[2]
+    cdef np.ndarray[np.float32_t, ndim=1] amin = np.empty(n, dtype=np.float32)
+    amin = min_along_z(a)
+    n = scipy.fft.next_fast_len(n)
+    amin -= np.mean(amin)
+    amin = scipy.fft.rfft(amin, n=n, overwrite_x=True).real
+    return amin[amin.size//20:-amin.size//20]
+
+
+        

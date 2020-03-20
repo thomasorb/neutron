@@ -30,3 +30,7 @@ def delay(a, d, n, feedback):
         b[(i+1)*d:a.shape[0]+((i+1)*d)] += a * feedback**i
     return b
     
+
+
+
+            
