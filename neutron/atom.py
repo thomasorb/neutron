@@ -3,6 +3,8 @@ import scipy.fft
 import multiprocessing
 import time
 
+import astropy.io.fits as pyfits
+
 import sounddevice as sd
 import mido
 
@@ -16,8 +18,16 @@ from . import ccore
 
 class Core(object):
 
-    def __init__(self):
+    def __init__(self, cubepath):
 
+
+        self.data = pyfits.open(cubepath)[0].data.astype(np.float32)
+        self.data /= np.nanmax(self.data) * 0.5
+        self.data[self.data > 1] = 1.
+        self.data[self.data < -1] = -1.
+        self.data *= 1000
+        print(self.data[250,250,:])
+        logging.info('data shape: {}'.format(self.data.shape))
         self.mgr = multiprocessing.Manager()
         self.out_bufferL = multiprocessing.RawArray(
             'f', np.zeros(config.BUFFERSIZE, dtype=np.float32))
@@ -30,8 +40,8 @@ class Core(object):
         self.notes = multiprocessing.Array('d', np.zeros(256, dtype=float))
     
         self.p = multiprocessing.RawArray('d', np.zeros(2, dtype=float))
-        self.p[0] = 0.3 # attack
-        self.p[1] = 1 # release
+        self.p[0] = 0.05 # attack
+        self.p[1] = 0.5 # release
         
         self.player_process = multiprocessing.Process(
             name='player',
@@ -43,7 +53,8 @@ class Core(object):
         self.midi_process = multiprocessing.Process(
             name='midiplayer',
             target=MidiPlayer, 
-            args=(self.out_bufferL, self.out_bufferR, self.out_i, self.notes, self.p, self.outlock))
+            args=(self.out_bufferL, self.out_bufferR, self.out_i,
+                  self.notes, self.p, self.outlock, self.data))
 
         self.midi_process.start()
 
@@ -108,7 +119,7 @@ class Player(object):
 
 class MidiPlayer(object):
 
-    def __init__(self, out_bufferL, out_bufferR, out_i, notes, p, outlock):
+    def __init__(self, out_bufferL, out_bufferR, out_i, notes, p, outlock, data):
 
         loopcount = 0
         longloop = 100
@@ -150,22 +161,23 @@ class MidiPlayer(object):
             msgs = sorted(msgs, key= lambda elem: elem.type == 'note_on')
 
             for msg in msgs:
+                logging.info('MIDI msg: {}'.format(msg))
 
                 if msg.type == 'note_on':
                     timing = time.time()
 
                     notes[int(msg.note)] = timing
-
-                    #logging.debug('MIDI msg: {}'.format(msg))
-
+                    
+                    
                     sounds.append(
                         (multiprocessing.Process(
                             name='sound', 
                             target=ccore.sound,
-                            args=(out_bufferL, out_bufferR, out_i, notes, msg, outlock,
+                            args=(out_bufferL, out_bufferR, out_i, notes,
+                                  msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  config.PRELOADTIME)),
+                                  2000, 12*10, data)),
                          msg.note))
 
                     sounds[-1][0].start()
