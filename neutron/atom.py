@@ -177,7 +177,7 @@ class MidiPlayer(object):
                                   msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  2000, 12*10, data)),
+                                  10000, data)),
                          msg.note))
 
                     sounds[-1][0].start()

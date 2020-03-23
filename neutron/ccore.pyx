@@ -27,6 +27,18 @@ ctypedef long double float128_t
 cdef int SAMPLERATE = 44100
 cdef int BYTEDEPTH = 32
 cdef int A_MIDIKEY = 45
+cdef int BASENOTE = 0
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def interpolate(np.float32_t[::1] a_in, int n):
+    cdef int i
+    cdef np.float32_t[::1] a_out = np.empty()
+    with nogil:
+        for i in range(n):
+            
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -109,12 +121,12 @@ cdef class NullWave(object):
     cdef public int index, nbuf
     cdef public np.float32_t[:] sampleL
     cdef public np.float32_t[:] sampleR
-    cdef public int N, BASENOTE
+    cdef public int N
     
-    def __init__(self, int nbuf, int note, int BASENOTE):
+    def __init__(self, int nbuf, int note):
+        global BASENOTE
         self.index = 0
         self.nbuf = nbuf
-        self.BASENOTE = BASENOTE
         cdef np.ndarray[np.float32_t, ndim=1] base_sampleL
         cdef np.ndarray[np.float32_t, ndim=1] base_sampleR
         
@@ -157,8 +169,9 @@ cdef class SineWave(NullWave):
     
     def get_base_sample(self):
         global SAMPLERATE
+        global BASENOTE
         cdef np.ndarray[np.float32_t, ndim=1] s = sine(
-            note2f(self.BASENOTE),
+            note2f(BASENOTE),
             self.nbuf * 2, SAMPLERATE)
         cdef int n = scipy.fft.next_fast_len(s.size)
         s = scipy.fft.rfft(s, n=n, overwrite_x=True).real
@@ -168,9 +181,9 @@ cdef class DataWave(NullWave):
 
     cdef public np.float32_t[:,:,:] data
     
-    def __init__(self, np.ndarray[np.float32_t, ndim=3] data, int nbuf, int note, int BASENOTE):
+    def __init__(self, np.ndarray[np.float32_t, ndim=3] data, int nbuf, int note):
         self.data = data
-        NullWave.__init__(self, nbuf, note, BASENOTE)
+        NullWave.__init__(self, nbuf, note)
 
     def get_base_sample(self):
         return np.array([self.data[230,230,:], self.data[231,237,:]])
@@ -180,7 +193,7 @@ cdef class DataWave(NullWave):
 @cython.wraparound(False)
 def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int channel,
           outlock, double timing, float attack, float release,
-          int BUFFERSIZE, float MASTER, float SLEEPTIME, int PRELOADSAMPLES, int BASENOTE,
+          int BUFFERSIZE, float MASTER, float SLEEPTIME, int PRELOADSAMPLES,
           np.ndarray[np.float32_t, ndim=3] data):
     
     cdef bool stop = False
@@ -193,9 +206,9 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
     cdef int i
     
     if channel == 0:
-        wave = DataWave(data, PRELOADSAMPLES, note, BASENOTE)
+        wave = SineWave(data, PRELOADSAMPLES, note)
     else:
-        wave = SineWave(PRELOADSAMPLES, note, BASENOTE)
+        wave = DataWave(PRELOADSAMPLES, note)
 
     while not stop:
         now = time.time()        
