@@ -25,7 +25,7 @@ extensions = [
 
 setup(
     name='ovids3d',
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions, annotate=True),
     version='1.0',
     url='https://myurl.com',
     license='GPLv3+',

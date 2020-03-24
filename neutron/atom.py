@@ -26,7 +26,6 @@ class Core(object):
         self.data[self.data > 1] = 1.
         self.data[self.data < -1] = -1.
         self.data *= 1000
-        print(self.data[250,250,:])
         logging.info('data shape: {}'.format(self.data.shape))
         self.mgr = multiprocessing.Manager()
         self.out_bufferL = multiprocessing.RawArray(
@@ -124,6 +123,8 @@ class MidiPlayer(object):
         loopcount = 0
         longloop = 100
         timing = 0
+
+        view = ccore.data2view(data.astype(np.complex64))
         
         logging.info('>> MIDI INPUTS:\n   {}'.format('\n   '.join(mido.get_input_names())))
         logging.info('>> MIDI INPUT: {}'.format(config.USB_IN))
@@ -177,7 +178,7 @@ class MidiPlayer(object):
                                   msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  10000, data)),
+                                  view, 'square', config.DIRTY, config.DATATUNE)),
                          msg.note))
 
                     sounds[-1][0].start()
