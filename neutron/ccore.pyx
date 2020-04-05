@@ -80,7 +80,28 @@ cdef min_along_z(np.complex64_t[:,:,::1] a):
                         minval = a[ii,ij,ik]
             b[ik] = minval
     return b
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef mean_along_z(np.complex64_t[:,:,::1] a):
     
+    cdef int n = a.shape[2]
+    cdef np.complex64_t[::1] b = np.ascontiguousarray(np.empty(n, dtype=np.complex64))
+    cdef int i, j, k, si, sj
+    cdef complex _sum
+    si = a.shape[0]
+    sj = a.shape[1]
+    cdef complex area = <complex> (si * sj)
+    with nogil:
+        for ik in range(n):
+            _sum = 0
+            for ii in range(si):
+                for ij in range(sj):
+                    _sum += a[ii,ij,ik]
+                    
+            b[ik] = _sum / area
+    return b
+
 
 # def transform3d(np.ndarray[np.float32_t, ndim=3] a, double shift):
 #     cdef np.ndarray[np.float32_t, ndim=1] b = transform1d(min_along_z(a), shift)
@@ -197,7 +218,6 @@ cdef get_buffer(np.float32_t[::1] a, int index, int N):
         n = maxindex - index
         wrap = N - n
 
-    
     buf[:n] = a[index:maxindex].copy()
     
     if wrap > 0:
@@ -295,12 +315,13 @@ cdef class DataWave(Wave):
     cdef int iiL, ijL, iiR, ijR
     cdef int tune
     
-    def __init__(self, np.complex64_t[:,:,::1] data, int note, int dirty=500, int tune=36):
+    def __init__(self, np.complex64_t[:,:,::1] data, int note, int posx, int posy,
+                 int dirty=500, int tune=36):
         self.data = data
-        self.iiL = 230
-        self.ijL = 227
-        self.iiR = 231
-        self.ijR = 229
+        self.iiL = posx
+        self.ijL = posy
+        self.iiR = posx
+        self.ijR = posy
         self.tune = tune
         
         Wave.__init__(self, note, mode='sine', dirty=dirty)
@@ -327,8 +348,8 @@ cdef class DataWave(Wave):
             ii = self.iiR
             ij = self.ijR
 
-        base_sample = min_along_z(self.data[ii:ii+INTEGSIZE,
-                                            ij:ij+INTEGSIZE, :])
+        base_sample = mean_along_z(self.data[ii:ii+INTEGSIZE,
+                                             ij:ij+INTEGSIZE, :])
         if init: return base_sample
         
         with nogil:
@@ -337,7 +358,6 @@ cdef class DataWave(Wave):
                     base_sample[i] = (base_sample[i] + self.base_sampleL[i]) / 2.
                 else:
                     base_sample[i] = (base_sample[i] + self.base_sampleR[i]) / 2.
-                    
         return base_sample
 
     cdef inverse_transform(self, np.complex64_t[::1] X, int note, int basenote):
@@ -366,7 +386,8 @@ cdef random_move(int ii, int s, int imin, int imax):
 def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int channel,
           outlock, double timing, float attack, float release,
           int BUFFERSIZE, float MASTER, float SLEEPTIME, 
-          np.complex64_t[:,:,::1] data, str mode, int dirty, int tune):
+          np.complex64_t[:,:,::1] data, str mode, int dirty, int tune,
+          int posx, int posy):
     
     cdef bool stop = False
     cdef double rel_stime = 0
@@ -377,9 +398,8 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
     cdef np.float32_t[::1] bufR
     cdef int i
     cdef double last_update_time = 0
-    
     if channel == 0:
-        wave = DataWave(data, note, dirty=dirty, tune=tune)
+        wave = DataWave(data, note, posx, posy, dirty=dirty, tune=tune)
     else:
         wave = Wave(note, mode=mode, dirty=dirty)
 

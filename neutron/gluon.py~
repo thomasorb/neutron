@@ -1,9 +1,9 @@
 import numpy as np
-import scipy.fft
 import multiprocessing
 import time
 
 import astropy.io.fits as pyfits
+import orb.utils.io
 
 import sounddevice as sd
 import mido
@@ -21,7 +21,11 @@ class Core(object):
     def __init__(self, cubepath):
 
 
-        self.data = pyfits.open(cubepath)[0].data.astype(np.float32)
+        if '.fits' in cubepath:
+            self.data = pyfits.open(cubepath)[0].data.astype(np.float32)
+        else:
+            self.data = orb.utils.io.read_hdf5(cubepath, dtype=np.complex64)
+        self.data[np.isnan(self.data)] = 0.
         self.data /= np.nanmax(self.data) * 0.5
         self.data[self.data > 1] = 1.
         self.data[self.data < -1] = -1.
@@ -38,30 +42,34 @@ class Core(object):
 
         self.notes = multiprocessing.Array('d', np.zeros(256, dtype=float))
     
-        self.p = multiprocessing.RawArray('d', np.zeros(2, dtype=float))
+        self.p = multiprocessing.RawArray('d', np.zeros(4, dtype=float))
         self.p[0] = 0.05 # attack
         self.p[1] = 0.5 # release
+        self.p[2] = self.data.shape[0]/2 # posx
+        self.p[3] = self.data.shape[1]/2 # posy
+
+        self.audio
         
-        self.player_process = multiprocessing.Process(
-            name='player',
-            target=Player, 
+        self.autio_player_process = multiprocessing.Process(
+            name='audioplayer',
+            target=AudioPlayer, 
             args=(self.out_bufferL, self.out_bufferR, self.out_i, self.outlock))
 
-        self.player_process.start()
+        self.audio_player_process.start()
                 
-        self.midi_process = multiprocessing.Process(
+        self.midi_player_process = multiprocessing.Process(
             name='midiplayer',
             target=MidiPlayer, 
             args=(self.out_bufferL, self.out_bufferR, self.out_i,
                   self.notes, self.p, self.outlock, self.data))
 
-        self.midi_process.start()
+        self.midi_player_process.start()
 
-        self.player_process.join()
-        self.midi_process.join()
+        self.audio_player_process.join()
+        self.midi_player_process.join()
         
 
-class Player(object):
+class AudioPlayer(object):
 
     def __init__(self, out_bufferL, out_bufferR, out_i, outlock):
 
@@ -123,18 +131,19 @@ class MidiPlayer(object):
         loopcount = 0
         longloop = 100
         timing = 0
-
-        view = ccore.data2view(data.astype(np.complex64))
+        view = ccore.data2view(np.ascontiguousarray(data.astype(np.complex64)))
         
         logging.info('>> MIDI INPUTS:\n   {}'.format('\n   '.join(mido.get_input_names())))
-        logging.info('>> MIDI INPUT: {}'.format(config.USB_IN))
-        inport = mido.open_input(config.USB_IN)
+        logging.info('>> MIDI INPUT: {}'.format(config.MIDI_IN))
+        inport = mido.open_input(config.MIDI_IN)
 
         sounds = list()
 
         release = p[1]
         attack = p[0]
-
+        posx = int(p[2])
+        posy = int(p[3])
+        
         while True:
             loopcount += 1
             if loopcount > longloop:
@@ -178,7 +187,7 @@ class MidiPlayer(object):
                                   msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  view, 'square', config.DIRTY, config.DATATUNE)),
+                                  view, 'square', config.DIRTY, config.DATATUNE, posx, posy)),
                          msg.note))
 
                     sounds[-1][0].start()
@@ -186,3 +195,7 @@ class MidiPlayer(object):
 
                 else:
                     notes[int(msg.note)] = 0
+
+
+        
+
