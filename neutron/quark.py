@@ -1,30 +1,123 @@
 import numpy as np
 import multiprocessing
+import time
+import logging
+import warnings
 
+import sounddevice as sd
 import mido
 
-import logging
-import time
+import astropy.io.fits as pyfits
+import orb.utils.io
+
+logging.getLogger().setLevel('INFO')
 
 from . import config
 from . import ccore
 
-class MidiServer(object):
+class Core(object):
 
-    def __init__(self, ):
-        logging.info('>> MIDI OUTPUTS:\n   {}'.format('\n   '.join(mido.get_output_names())))
-        logging.info('>> QUARK MIDI OUTPUT: {}'.format(config.MIDI_OUT))
-        outport = mido.open_output(config.MIDI_OUT)
-        while True:
-            note = np.random.randint(50, 110)
-            length = np.random.uniform(0.2, 3)
-            msg = mido.Message('note_on', note=note, velocity=3, time=length)
-            outport.send(msg)
+    def __init__(self, cubepath):
 
-            time.sleep(length)
-            msg = mido.Message('note_off', note=note)
-            outport.send(msg)
+        if '.fits' in cubepath:
+            self.data = pyfits.open(cubepath)[0].data.astype(np.float32)
+        else:
+            self.data = orb.utils.io.read_hdf5(cubepath, dtype=np.complex64)
+        self.data[np.isnan(self.data)] = 0.
+        self.data /= np.nanmax(self.data) * 0.5
+        self.data[self.data > 1] = 1.
+        self.data[self.data < -1] = -1.
+        self.data *= config.DATA_MASTER
+        logging.info('data shape: {}'.format(self.data.shape))
+        self.out_bufferL = multiprocessing.RawArray(
+            'f', np.zeros(config.BUFFERSIZE, dtype=np.float32))
+        self.out_bufferR = multiprocessing.RawArray(
+            'f', np.zeros(config.BUFFERSIZE, dtype=np.float32))
+        
+        self.out_i = multiprocessing.RawValue('i', 0)
+        self.outlock = multiprocessing.Lock()
 
+        self.notes = multiprocessing.Array('d', np.zeros(256, dtype=float))
+    
+        self.p = multiprocessing.RawArray('d', np.zeros(4, dtype=float))
+        self.p[0] = config.ATTACK # attack
+        self.p[1] = config.RELEASE # release
+        self.p[2] = self.data.shape[0]/2 # posx
+        self.p[3] = self.data.shape[1]/2 # posy
+
+        self.audio_player_process = multiprocessing.Process(
+            name='audioplayer',
+            target=AudioPlayer, 
+            args=(self.out_bufferL, self.out_bufferR, self.out_i, self.outlock))
+
+        self.audio_player_process.start()
+                
+        self.midi_player_process = multiprocessing.Process(
+            name='midiplayer',
+            target=MidiPlayer, 
+            args=(self.out_bufferL, self.out_bufferR, self.out_i,
+                  self.notes, self.p, self.outlock, self.data))
+
+        self.midi_player_process.start()
+
+        self.audio_player_process.join()
+        self.midi_player_process.join()
+        
+
+class AudioPlayer(object):
+
+    def __init__(self, out_bufferL, out_bufferR, out_i, outlock):
+
+        self.out_bufferL = out_bufferL
+        self.out_bufferR = out_bufferR
+        
+        self.out_i = out_i
+        self.zeros = np.zeros(config.BUFFERSIZE, dtype=np.float32)
+        self.outlock = outlock
+        sd.default.device = config.DEVICE
+        sd.default.samplerate = config.SAMPLERATE
+        sd.default.latency = 'low'
+        
+        logging.info('>> AUDIO OUTPUTS:\n{}'.format(sd.query_devices()))
+        logging.info('>> AUDIO OUTPUT: {}'.format(config.DEVICE))
+        
+        self.last_looptime = 0
+        #self.sine = ccore.SineWave(32)
+        with sd.OutputStream(
+                dtype=config.CAST, channels=config.NCHANNELS,
+                callback=self.callback, blocksize=config.BUFFERSIZE) as self.stream:
+        
+            while True:
+                time.sleep(config.SLEEPTIME)
+                
+                
+    def callback(self, outdata, frames, timing, status):
+        stime = time.time()
+        if status:
+            warnings.warn('callback status: {} \n > (callback loop time: {})'.format(status, self.last_looptime))
+
+        self.outlock.acquire()    
+        try:
+            self.out_i.value += 1
+            outdata[:] = ccore.ndarray2buffer(np.array((self.out_bufferL, self.out_bufferR), dtype=np.float32).T)
+            self.out_bufferL[:] *= self.zeros
+            self.out_bufferR[:] *= self.zeros
+            # for testing pure sine
+            #outdata[:] = self.sine.get_buffer(config.BUFFERSIZE)
+        except Exception as err:
+            warnings.warn('callback error {}'.format(err))
+            raise
+        finally:
+            self.outlock.release()
+
+                
+        self.last_looptime = time.time() - stime
+
+    def __del__(self):
+        try:
+            self.stream.close()
+        except: pass 
+                        
 
 
 class MidiPlayer(object):
@@ -54,7 +147,8 @@ class MidiPlayer(object):
                 attack = p[0]
                 for isound in sounds:
                     if not isound[0].is_alive():
-                        del isound
+                        isound[0].join()
+                        del(isound)
 
             time.sleep(config.SLEEPTIME)
 
@@ -90,7 +184,7 @@ class MidiPlayer(object):
                                   msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  view, 'square', config.DIRTY, config.DATATUNE, posx, posy)),
+                                  view, 'sine', config.DIRTY, config.DATATUNE, posx, posy)),
                          msg.note))
 
                     sounds[-1][0].start()

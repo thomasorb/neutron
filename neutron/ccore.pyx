@@ -8,18 +8,18 @@ import numpy.random
 import scipy.fft
 import scipy.signal
 import time
-import logging
-import multiprocessing
 
 from cpython cimport bool
 from libc.math cimport cos, pow, floor
 from libc.stdlib cimport malloc, free
 
-cdef int SAMPLERATE = 44100
-cdef int BYTEDEPTH = 32
-cdef int A_MIDIKEY = 45
-cdef int BASENOTE = 90
-cdef int INTEGSIZE = 20
+from . import config
+
+cdef int SAMPLERATE = <int> config.SAMPLERATE
+cdef int BYTEDEPTH = <int> config.BYTEDEPTH
+cdef int A_MIDIKEY = <int> config.A_MIDIKEY
+cdef int BASENOTE = <int> config.BASENOTE
+cdef int INTEGSIZE = <int> config.INTEGSIZE
 
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
@@ -89,17 +89,23 @@ cdef mean_along_z(np.complex64_t[:,:,::1] a):
     cdef np.complex64_t[::1] b = np.ascontiguousarray(np.empty(n, dtype=np.complex64))
     cdef int i, j, k, si, sj
     cdef complex _sum
+    cdef float _min, _max, _val
     si = a.shape[0]
     sj = a.shape[1]
     cdef complex area = <complex> (si * sj)
     with nogil:
         for ik in range(n):
             _sum = 0
+            _min = abs(a[0,0,ik])
+            _max = abs(a[0,0,ik])
             for ii in range(si):
                 for ij in range(sj):
+                    _val = abs(a[ii,ij,ik])
                     _sum += a[ii,ij,ik]
-                    
-            b[ik] = _sum / area
+                    if _val < _min: _min = _val
+                    if _val > _max: _max = _val
+            b[ik] = b[ik] - <complex> (_min + _max)
+            b[ik] = _sum / (area - 2.)
     return b
 
 
@@ -130,7 +136,7 @@ def sine(float f, int n, int srate):
     return np.cos(f * x * 2. * np.pi)
 
 def square(float f, int n, int srate):
-    return np.sign(sine(f, n, srate))#.astype(np.float32)
+    return np.sign(sine(f, n, srate))
 
 @cython.cdivision(True)
 cdef float note2f(int note) nogil:
@@ -138,7 +144,7 @@ cdef float note2f(int note) nogil:
 
 @cython.cdivision(True)
 cdef float note2shift(int note, int basenote) nogil:
-    return note2f(basenote) / note2f(note)
+    return max(note2f(basenote) / note2f(note), 1)
 
 @cython.cdivision(True)
 def release_values(double time, double stime, double rtime, int buffersize):
@@ -193,9 +199,10 @@ cdef forward_transform(np.float32_t[:] x, int dirty=500):
 cdef inverse_transform(np.complex64_t[::1] X, int note, int basenote):
     cdef int N = X.shape[0]
     N = (N - N%2) * 2
-    
+
     cdef double shift = note2shift(note, basenote)
     cdef int num = <int> (<double> N * shift)
+    
     num = scipy.fft.next_fast_len(num)
     
     # Inverse transform
@@ -207,24 +214,14 @@ cdef inverse_transform(np.complex64_t[::1] X, int note, int basenote):
 @cython.wraparound(False)
 cdef get_buffer(np.float32_t[::1] a, int index, int N):
     cdef np.float32_t[::1] buf = np.ascontiguousarray(np.empty(N, dtype=np.float32))
-    if index >= a.shape[0] - 1:
-        index = 0
-    cdef int maxindex = index + N
-    cdef int wrap = 0
-    cdef int n = N
-    
-    if maxindex > a.shape[0]:
-        maxindex = a.shape[0]
-        n = maxindex - index
-        wrap = N - n
-
-    buf[:n] = a[index:maxindex].copy()
-    
-    if wrap > 0:
-        buf[n:] = a[:wrap].copy()
-        return buf, wrap
-    else:
-        return buf, maxindex
+    cdef int i
+    with nogil:
+        for i in range(N):
+            buf[i] = a[index]
+            index += 1
+            if index > a.shape[0] - 1:
+                index = 0
+    return buf, index
             
         
 cdef class Wave(object):
@@ -306,6 +303,7 @@ cdef class Wave(object):
                 ienv *= <float> velocity / 64. * volume
                 bufL[i] = bufL[i] * ienv 
                 bufR[i] = bufR[i] * ienv
+                
         return bufL, bufR
     
 
@@ -363,7 +361,7 @@ cdef class DataWave(Wave):
     cdef inverse_transform(self, np.complex64_t[::1] X, int note, int basenote):
         cdef np.float32_t[:] y = inverse_transform(X, note, basenote + self.tune)
         cdef int border = max(<int> (<float> y.shape[0] * 0.1), 10)
-        return y[border:y.shape[0]//2 - <int>(y.shape[0]*0.25)]
+        return y[border:y.shape[0]//2 - <int>(y.shape[0]*0.125)]
     
 
 def data2view(np.ndarray[np.complex64_t, ndim=3] data):
@@ -432,6 +430,8 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
                 for i in range(BUFFERSIZE):
                     out_bufferL[i] += bufL[i]
                     out_bufferR[i] += bufR[i]
+        except Exception as e:
+            print('error in get_buffers: {}'.format(e))
                 
         finally:
             outlock.release()
@@ -440,7 +440,6 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
         if notes[int(note)] != timing: 
 
             if rel_stime == 0:
-                #logging.debug('release sound {}'.format(note))
                 rel_stime = now
 
             if now - rel_stime >= release:
@@ -448,6 +447,6 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
                 
         time.sleep(SLEEPTIME)
 
-    #logging.debug('end sound {}'.format(note))
+    del wave
 
 
