@@ -4,6 +4,7 @@ import logging
 import time
 import re
 import traceback
+import random
 
 import mido
 
@@ -120,7 +121,7 @@ class MidiServer(object):
         self.t_bar = measure[0] / measure[1] * 4 * self.t_note # bar duration (s)
         self.bar_divisions = int(self.NOTE_DIVISIONS * measure[0] / measure[1] * 4)
 
-        self.redur = re.compile(r'[opx]+')
+        self.redur = re.compile(r'[opx$]+')
         self.repit = re.compile(r'[\dbd?]+')
         self.renote = re.compile(r'[\d?]+')
         
@@ -140,6 +141,7 @@ class MidiServer(object):
             msgps.append(list())
         
         while True:
+            
             bar_index = step_index // self.bar_divisions
             
             # read new msgs one step before next bar
@@ -181,7 +183,7 @@ class MidiServer(object):
             if not step_index % self.bar_divisions:
                 # load msgs for the whole bar
                 msgs = next_msgs
-                print(msgs)
+                
 
             for i in range(len(msgs)):
                 if str(step_index % self.bar_divisions) in msgs[i][0]:
@@ -225,8 +227,8 @@ class MidiServer(object):
         msgs_dict = dict()
         step = 0
         for im in self.tracks[track][-1].split():
-            velocity = config.VELOCITY
-
+            velocity = config.VELOCITY                
+            
             if '!' in im:
                 msgs_dict['kill'] = True
                 msgs_dict['destroy'] = True
@@ -247,8 +249,7 @@ class MidiServer(object):
                 ipitch = self.renote.findall(inum)[0]
                 if '?' in ipitch:
                     #np.random.seed()
-                    ipitch = self.mode[np.random.randint(len(self.mode))] + np.random.randint(8) * 12
-                    print(ipitch)
+                    ipitch = np.random.randint(12,12*6)
                 else:
                     ipitch = int(ipitch) - 1
                     ipitch = conv(ipitch, self.mode, octave) + acc(inum)
@@ -262,10 +263,12 @@ class MidiServer(object):
             
             duration = 1
             if len(dur) > 0:
-                duration = self.durations[dur[0]]
-            
+                if '$' not in dur[0]:
+                    duration = self.durations[dur[0]]
+                else:
+                    duration = self.durations[random.choice(['p', 'pp', 'o', 'oo'])]
+                    
             imsg = [pitch, duration, velocity, instrument]
-            print('>>>>>>>>>>>>>>>>', imsg)
             # durations are converted and a message dict is returned
             msgs_dict[str(step)] = [imsg[0], imsg[1] * self.t_note, imsg[2], imsg[3]]
             if dur[0] == 'x':
@@ -278,23 +281,12 @@ class MidiServer(object):
 
 
 def sendmessage(msg, outport, t_step, stop_event):
-    msg = msg
-    outport = outport
     stime = time.time()
-    notes = list()
-    for inote in msg[0]:
-        print(inote)
-        if '?' == inote:
-            print('pouet==============')
-            np.random.seed()
-            notes.append(np.random.randint(0, 127))
-            print(notes)
-        else:
-            notes.append(inote)
-            
+    notes = msg[0]
+    print(msg)
     for inote in notes:
         outport.send(mido.Message('note_on', note=inote, velocity=msg[2],
-                                       channel=msg[3]))
+                                  channel=msg[3]))
 
     while time.time() - stime < msg[1] - 8 * t_step and not stop_event.is_set():
         time.sleep(config.SLEEPTIME)

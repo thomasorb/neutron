@@ -385,7 +385,7 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
           outlock, double timing, float attack, float release,
           int BUFFERSIZE, float MASTER, float SLEEPTIME, 
           np.complex64_t[:,:,::1] data, str mode, int dirty, int tune,
-          int posx, int posy):
+          int posx, int posy, float update_time):
     
     cdef bool stop = False
     cdef double rel_stime = 0
@@ -413,7 +413,7 @@ def sound(out_bufferL, out_bufferR, out_i, notes, int note, int velocity, int ch
             svr, evr = release_values(now, rel_stime, release, BUFFERSIZE)
         sva, eva = attack_values(now, att_stime, attack, BUFFERSIZE)
 
-        if (now - last_update_time) > 0.3:
+        if (now - last_update_time) > update_time:
             last_update_time = now
             wave.update_data(init=False)
         

@@ -1,8 +1,10 @@
 import numpy as np
 import multiprocessing
 import time
+import datetime
 import logging
 import warnings
+import soundfile as sf
 
 import sounddevice as sd
 import mido
@@ -82,14 +84,17 @@ class AudioPlayer(object):
         logging.info('>> AUDIO OUTPUT: {}'.format(config.DEVICE))
         
         self.last_looptime = 0
-        #self.sine = ccore.SineWave(32)
+        self.lastoutbuffer = None
+        self.soundfile = sf.SoundFile(
+            '{}.wav'.format(datetime.datetime.timestamp(datetime.datetime.now())), 'w',
+            samplerate=config.SAMPLERATE, channels=config.NCHANNELS)
+        
         with sd.OutputStream(
                 dtype=config.CAST, channels=config.NCHANNELS,
                 callback=self.callback, blocksize=config.BUFFERSIZE) as self.stream:
-        
+                
             while True:
                 time.sleep(config.SLEEPTIME)
-                
                 
     def callback(self, outdata, frames, timing, status):
         stime = time.time()
@@ -99,11 +104,12 @@ class AudioPlayer(object):
         self.outlock.acquire()    
         try:
             self.out_i.value += 1
-            outdata[:] = ccore.ndarray2buffer(np.array((self.out_bufferL, self.out_bufferR), dtype=np.float32).T)
+            lastoutbuffer = ccore.ndarray2buffer(np.array((self.out_bufferL, self.out_bufferR), dtype=np.float32).T)
+            outdata[:] = lastoutbuffer
+            self.soundfile.write(lastoutbuffer)
+            
             self.out_bufferL[:] *= self.zeros
             self.out_bufferR[:] *= self.zeros
-            # for testing pure sine
-            #outdata[:] = self.sine.get_buffer(config.BUFFERSIZE)
         except Exception as err:
             warnings.warn('callback error {}'.format(err))
             raise
@@ -116,6 +122,7 @@ class AudioPlayer(object):
     def __del__(self):
         try:
             self.stream.close()
+            self.soundfile.close()
         except: pass 
                         
 
@@ -184,7 +191,8 @@ class MidiPlayer(object):
                                   msg.note, msg.velocity, msg.channel, outlock,
                                   timing, attack, release,
                                   config.BUFFERSIZE, config.MASTER, config.SLEEPTIME,
-                                  view, 'sine', config.DIRTY, config.DATATUNE, posx, posy)),
+                                  view, 'sine', config.DIRTY, config.DATATUNE, posx, posy,
+                                  config.DATA_UPDATE_TIME)),
                          msg.note))
 
                     sounds[-1][0].start()

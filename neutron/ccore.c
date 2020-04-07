@@ -2674,6 +2674,7 @@ static const char __pyx_k_out_bufferL[] = "out_bufferL";
 static const char __pyx_k_out_bufferR[] = "out_bufferR";
 static const char __pyx_k_overwrite_x[] = "overwrite_x";
 static const char __pyx_k_update_data[] = "update_data";
+static const char __pyx_k_update_time[] = "update_time";
 static const char __pyx_k_RuntimeError[] = "RuntimeError";
 static const char __pyx_k_numpy_random[] = "numpy.random";
 static const char __pyx_k_pyx_checksum[] = "__pyx_checksum";
@@ -2933,6 +2934,7 @@ static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
 static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
 static PyObject *__pyx_n_s_update_data;
+static PyObject *__pyx_n_s_update_time;
 static PyObject *__pyx_n_s_value;
 static PyObject *__pyx_n_s_velocity;
 static PyObject *__pyx_n_s_view;
@@ -2952,7 +2954,7 @@ static int __pyx_pf_7neutron_5ccore_8DataWave___init__(struct __pyx_obj_7neutron
 static PyObject *__pyx_pf_7neutron_5ccore_8DataWave_2__reduce_cython__(struct __pyx_obj_7neutron_5ccore_DataWave *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7neutron_5ccore_8DataWave_4__setstate_cython__(struct __pyx_obj_7neutron_5ccore_DataWave *__pyx_v_self, PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_7neutron_5ccore_10data2view(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_data); /* proto */
-static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy); /* proto */
+static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy, float __pyx_v_update_time); /* proto */
 static PyObject *__pyx_pf_7neutron_5ccore_14__pyx_unpickle_Wave(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_7neutron_5ccore_16__pyx_unpickle_DataWave(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
@@ -9400,16 +9402,19 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
   int __pyx_v_tune;
   int __pyx_v_posx;
   int __pyx_v_posy;
+  float __pyx_v_update_time;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("sound (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_out_bufferL,&__pyx_n_s_out_bufferR,&__pyx_n_s_out_i,&__pyx_n_s_notes,&__pyx_n_s_note,&__pyx_n_s_velocity,&__pyx_n_s_channel,&__pyx_n_s_outlock,&__pyx_n_s_timing,&__pyx_n_s_attack,&__pyx_n_s_release,&__pyx_n_s_BUFFERSIZE,&__pyx_n_s_MASTER,&__pyx_n_s_SLEEPTIME,&__pyx_n_s_data,&__pyx_n_s_mode,&__pyx_n_s_dirty,&__pyx_n_s_tune,&__pyx_n_s_posx,&__pyx_n_s_posy,0};
-    PyObject* values[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_out_bufferL,&__pyx_n_s_out_bufferR,&__pyx_n_s_out_i,&__pyx_n_s_notes,&__pyx_n_s_note,&__pyx_n_s_velocity,&__pyx_n_s_channel,&__pyx_n_s_outlock,&__pyx_n_s_timing,&__pyx_n_s_attack,&__pyx_n_s_release,&__pyx_n_s_BUFFERSIZE,&__pyx_n_s_MASTER,&__pyx_n_s_SLEEPTIME,&__pyx_n_s_data,&__pyx_n_s_mode,&__pyx_n_s_dirty,&__pyx_n_s_tune,&__pyx_n_s_posx,&__pyx_n_s_posy,&__pyx_n_s_update_time,0};
+    PyObject* values[21] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
+        case 21: values[20] = PyTuple_GET_ITEM(__pyx_args, 20);
+        CYTHON_FALLTHROUGH;
         case 20: values[19] = PyTuple_GET_ITEM(__pyx_args, 19);
         CYTHON_FALLTHROUGH;
         case 19: values[18] = PyTuple_GET_ITEM(__pyx_args, 18);
@@ -9462,121 +9467,127 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_out_bufferR)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 1); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 1); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_out_i)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 2); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 2); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_notes)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 3); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 3); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_note)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 4); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 4); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_velocity)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 5); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 5); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
         if (likely((values[6] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_channel)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 6); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 6); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (likely((values[7] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_outlock)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 7); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 7); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  8:
         if (likely((values[8] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_timing)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 8); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 8); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  9:
         if (likely((values[9] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_attack)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 9); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 9); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 10:
         if (likely((values[10] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_release)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 10); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 10); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 11:
         if (likely((values[11] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_BUFFERSIZE)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 11); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 11); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 12:
         if (likely((values[12] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_MASTER)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 12); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 12); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 13:
         if (likely((values[13] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_SLEEPTIME)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 13); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 13); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 14:
         if (likely((values[14] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_data)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 14); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 14); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 15:
         if (likely((values[15] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_mode)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 15); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 15); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 16:
         if (likely((values[16] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dirty)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 16); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 16); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 17:
         if (likely((values[17] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_tune)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 17); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 17); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 18:
         if (likely((values[18] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_posx)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 18); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 18); __PYX_ERR(0, 384, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 19:
         if (likely((values[19] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_posy)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, 19); __PYX_ERR(0, 384, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 19); __PYX_ERR(0, 384, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case 20:
+        if (likely((values[20] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_update_time)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, 20); __PYX_ERR(0, 384, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "sound") < 0)) __PYX_ERR(0, 384, __pyx_L3_error)
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 20) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 21) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
@@ -9599,6 +9610,7 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
       values[17] = PyTuple_GET_ITEM(__pyx_args, 17);
       values[18] = PyTuple_GET_ITEM(__pyx_args, 18);
       values[19] = PyTuple_GET_ITEM(__pyx_args, 19);
+      values[20] = PyTuple_GET_ITEM(__pyx_args, 20);
     }
     __pyx_v_out_bufferL = values[0];
     __pyx_v_out_bufferR = values[1];
@@ -9620,17 +9632,18 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
     __pyx_v_tune = __Pyx_PyInt_As_int(values[17]); if (unlikely((__pyx_v_tune == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 387, __pyx_L3_error)
     __pyx_v_posx = __Pyx_PyInt_As_int(values[18]); if (unlikely((__pyx_v_posx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 388, __pyx_L3_error)
     __pyx_v_posy = __Pyx_PyInt_As_int(values[19]); if (unlikely((__pyx_v_posy == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 388, __pyx_L3_error)
+    __pyx_v_update_time = __pyx_PyFloat_AsFloat(values[20]); if (unlikely((__pyx_v_update_time == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 388, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("sound", 1, 20, 20, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 384, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("sound", 1, 21, 21, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 384, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("neutron.ccore.sound", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_mode), (&PyString_Type), 1, "mode", 1))) __PYX_ERR(0, 387, __pyx_L1_error)
-  __pyx_r = __pyx_pf_7neutron_5ccore_12sound(__pyx_self, __pyx_v_out_bufferL, __pyx_v_out_bufferR, __pyx_v_out_i, __pyx_v_notes, __pyx_v_note, __pyx_v_velocity, __pyx_v_channel, __pyx_v_outlock, __pyx_v_timing, __pyx_v_attack, __pyx_v_release, __pyx_v_BUFFERSIZE, __pyx_v_MASTER, __pyx_v_SLEEPTIME, __pyx_v_data, __pyx_v_mode, __pyx_v_dirty, __pyx_v_tune, __pyx_v_posx, __pyx_v_posy);
+  __pyx_r = __pyx_pf_7neutron_5ccore_12sound(__pyx_self, __pyx_v_out_bufferL, __pyx_v_out_bufferR, __pyx_v_out_i, __pyx_v_notes, __pyx_v_note, __pyx_v_velocity, __pyx_v_channel, __pyx_v_outlock, __pyx_v_timing, __pyx_v_attack, __pyx_v_release, __pyx_v_BUFFERSIZE, __pyx_v_MASTER, __pyx_v_SLEEPTIME, __pyx_v_data, __pyx_v_mode, __pyx_v_dirty, __pyx_v_tune, __pyx_v_posx, __pyx_v_posy, __pyx_v_update_time);
 
   /* function exit code */
   goto __pyx_L0;
@@ -9641,7 +9654,7 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy) {
+static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy, float __pyx_v_update_time) {
   PyBoolObject *__pyx_v_stop = 0;
   double __pyx_v_rel_stime;
   double __pyx_v_att_stime;
@@ -9692,7 +9705,7 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_RefNannySetupContext("sound", 0);
 
   /* "neutron/ccore.pyx":390
- *           int posx, int posy):
+ *           int posx, int posy, float update_time):
  * 
  *     cdef bool stop = False             # <<<<<<<<<<<<<<
  *     cdef double rel_stime = 0
@@ -10076,7 +10089,7 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
  *             svr, evr = release_values(now, rel_stime, release, BUFFERSIZE)
  *         sva, eva = attack_values(now, att_stime, attack, BUFFERSIZE)             # <<<<<<<<<<<<<<
  * 
- *         if (now - last_update_time) > 0.3:
+ *         if (now - last_update_time) > update_time:
  */
     __Pyx_GetModuleGlobalName(__pyx_t_12, __pyx_n_s_attack_values); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 414, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
@@ -10203,16 +10216,16 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
     /* "neutron/ccore.pyx":416
  *         sva, eva = attack_values(now, att_stime, attack, BUFFERSIZE)
  * 
- *         if (now - last_update_time) > 0.3:             # <<<<<<<<<<<<<<
+ *         if (now - last_update_time) > update_time:             # <<<<<<<<<<<<<<
  *             last_update_time = now
  *             wave.update_data(init=False)
  */
-    __pyx_t_7 = (((__pyx_v_now - __pyx_v_last_update_time) > 0.3) != 0);
+    __pyx_t_7 = (((__pyx_v_now - __pyx_v_last_update_time) > __pyx_v_update_time) != 0);
     if (__pyx_t_7) {
 
       /* "neutron/ccore.pyx":417
  * 
- *         if (now - last_update_time) > 0.3:
+ *         if (now - last_update_time) > update_time:
  *             last_update_time = now             # <<<<<<<<<<<<<<
  *             wave.update_data(init=False)
  * 
@@ -10220,7 +10233,7 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
       __pyx_v_last_update_time = __pyx_v_now;
 
       /* "neutron/ccore.pyx":418
- *         if (now - last_update_time) > 0.3:
+ *         if (now - last_update_time) > update_time:
  *             last_update_time = now
  *             wave.update_data(init=False)             # <<<<<<<<<<<<<<
  * 
@@ -10240,7 +10253,7 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
       /* "neutron/ccore.pyx":416
  *         sva, eva = attack_values(now, att_stime, attack, BUFFERSIZE)
  * 
- *         if (now - last_update_time) > 0.3:             # <<<<<<<<<<<<<<
+ *         if (now - last_update_time) > update_time:             # <<<<<<<<<<<<<<
  *             last_update_time = now
  *             wave.update_data(init=False)
  */
@@ -28315,6 +28328,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_unpack, __pyx_k_unpack, sizeof(__pyx_k_unpack), 0, 0, 1, 1},
   {&__pyx_n_s_update, __pyx_k_update, sizeof(__pyx_k_update), 0, 0, 1, 1},
   {&__pyx_n_s_update_data, __pyx_k_update_data, sizeof(__pyx_k_update_data), 0, 0, 1, 1},
+  {&__pyx_n_s_update_time, __pyx_k_update_time, sizeof(__pyx_k_update_time), 0, 0, 1, 1},
   {&__pyx_n_s_value, __pyx_k_value, sizeof(__pyx_k_value), 0, 0, 1, 1},
   {&__pyx_n_s_velocity, __pyx_k_velocity, sizeof(__pyx_k_velocity), 0, 0, 1, 1},
   {&__pyx_n_s_view, __pyx_k_view, sizeof(__pyx_k_view), 0, 0, 1, 1},
@@ -28690,10 +28704,10 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *           outlock, double timing, float attack, float release,
  *           int BUFFERSIZE, float MASTER, float SLEEPTIME,
  */
-  __pyx_tuple__39 = PyTuple_Pack(35, __pyx_n_s_out_bufferL, __pyx_n_s_out_bufferR, __pyx_n_s_out_i, __pyx_n_s_notes, __pyx_n_s_note, __pyx_n_s_velocity, __pyx_n_s_channel, __pyx_n_s_outlock, __pyx_n_s_timing, __pyx_n_s_attack, __pyx_n_s_release, __pyx_n_s_BUFFERSIZE, __pyx_n_s_MASTER, __pyx_n_s_SLEEPTIME, __pyx_n_s_data, __pyx_n_s_mode, __pyx_n_s_dirty, __pyx_n_s_tune, __pyx_n_s_posx, __pyx_n_s_posy, __pyx_n_s_stop, __pyx_n_s_rel_stime, __pyx_n_s_att_stime, __pyx_n_s_lastbuffer, __pyx_n_s_sva, __pyx_n_s_eva, __pyx_n_s_svr, __pyx_n_s_evr, __pyx_n_s_now, __pyx_n_s_bufL, __pyx_n_s_bufR, __pyx_n_s_i, __pyx_n_s_last_update_time, __pyx_n_s_wave, __pyx_n_s_e); if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 384, __pyx_L1_error)
+  __pyx_tuple__39 = PyTuple_Pack(36, __pyx_n_s_out_bufferL, __pyx_n_s_out_bufferR, __pyx_n_s_out_i, __pyx_n_s_notes, __pyx_n_s_note, __pyx_n_s_velocity, __pyx_n_s_channel, __pyx_n_s_outlock, __pyx_n_s_timing, __pyx_n_s_attack, __pyx_n_s_release, __pyx_n_s_BUFFERSIZE, __pyx_n_s_MASTER, __pyx_n_s_SLEEPTIME, __pyx_n_s_data, __pyx_n_s_mode, __pyx_n_s_dirty, __pyx_n_s_tune, __pyx_n_s_posx, __pyx_n_s_posy, __pyx_n_s_update_time, __pyx_n_s_stop, __pyx_n_s_rel_stime, __pyx_n_s_att_stime, __pyx_n_s_lastbuffer, __pyx_n_s_sva, __pyx_n_s_eva, __pyx_n_s_svr, __pyx_n_s_evr, __pyx_n_s_now, __pyx_n_s_bufL, __pyx_n_s_bufR, __pyx_n_s_i, __pyx_n_s_last_update_time, __pyx_n_s_wave, __pyx_n_s_e); if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 384, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__39);
   __Pyx_GIVEREF(__pyx_tuple__39);
-  __pyx_codeobj__40 = (PyObject*)__Pyx_PyCode_New(20, 0, 35, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_neutron_ccore_pyx, __pyx_n_s_sound, 384, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 384, __pyx_L1_error)
+  __pyx_codeobj__40 = (PyObject*)__Pyx_PyCode_New(21, 0, 36, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_neutron_ccore_pyx, __pyx_n_s_sound, 384, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 384, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Wave(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<

@@ -4312,8 +4312,8 @@ static PyObject *__pyx_pf_7neutron_5ccore_10data2view(CYTHON_UNUSED PyObject *__
 <pre class="cython line score-0">&#xA0;<span class="">381</span>: </pre>
 <pre class="cython line score-0">&#xA0;<span class="">382</span>: <span class="nd">@cython</span><span class="o">.</span><span class="n">boundscheck</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span></pre>
 <pre class="cython line score-0">&#xA0;<span class="">383</span>: <span class="nd">@cython</span><span class="o">.</span><span class="n">wraparound</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span></pre>
-<pre class="cython line score-269" onclick="(function(s){s.display=s.display==='block'?'none':'block'})(this.nextElementSibling.style)">+<span class="">384</span>: <span class="k">def</span> <span class="nf">sound</span><span class="p">(</span><span class="n">out_bufferL</span><span class="p">,</span> <span class="n">out_bufferR</span><span class="p">,</span> <span class="n">out_i</span><span class="p">,</span> <span class="n">notes</span><span class="p">,</span> <span class="nb">int</span> <span class="n">note</span><span class="p">,</span> <span class="nb">int</span> <span class="n">velocity</span><span class="p">,</span> <span class="nb">int</span> <span class="n">channel</span><span class="p">,</span></pre>
-<pre class='cython code score-269 '>/* Python wrapper */
+<pre class="cython line score-285" onclick="(function(s){s.display=s.display==='block'?'none':'block'})(this.nextElementSibling.style)">+<span class="">384</span>: <span class="k">def</span> <span class="nf">sound</span><span class="p">(</span><span class="n">out_bufferL</span><span class="p">,</span> <span class="n">out_bufferR</span><span class="p">,</span> <span class="n">out_i</span><span class="p">,</span> <span class="n">notes</span><span class="p">,</span> <span class="nb">int</span> <span class="n">note</span><span class="p">,</span> <span class="nb">int</span> <span class="n">velocity</span><span class="p">,</span> <span class="nb">int</span> <span class="n">channel</span><span class="p">,</span></pre>
+<pre class='cython code score-285 '>/* Python wrapper */
 static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static PyMethodDef __pyx_mdef_7neutron_5ccore_13sound = {"sound", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7neutron_5ccore_13sound, METH_VARARGS|METH_KEYWORDS, 0};
 static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
@@ -4337,16 +4337,19 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
   int __pyx_v_tune;
   int __pyx_v_posx;
   int __pyx_v_posy;
+  float __pyx_v_update_time;
   PyObject *__pyx_r = 0;
   <span class='refnanny'>__Pyx_RefNannyDeclarations</span>
   <span class='refnanny'>__Pyx_RefNannySetupContext</span>("sound (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&amp;__pyx_n_s_out_bufferL,&amp;__pyx_n_s_out_bufferR,&amp;__pyx_n_s_out_i,&amp;__pyx_n_s_notes,&amp;__pyx_n_s_note,&amp;__pyx_n_s_velocity,&amp;__pyx_n_s_channel,&amp;__pyx_n_s_outlock,&amp;__pyx_n_s_timing,&amp;__pyx_n_s_attack,&amp;__pyx_n_s_release,&amp;__pyx_n_s_BUFFERSIZE,&amp;__pyx_n_s_MASTER,&amp;__pyx_n_s_SLEEPTIME,&amp;__pyx_n_s_data,&amp;__pyx_n_s_mode,&amp;__pyx_n_s_dirty,&amp;__pyx_n_s_tune,&amp;__pyx_n_s_posx,&amp;__pyx_n_s_posy,0};
-    PyObject* values[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&amp;__pyx_n_s_out_bufferL,&amp;__pyx_n_s_out_bufferR,&amp;__pyx_n_s_out_i,&amp;__pyx_n_s_notes,&amp;__pyx_n_s_note,&amp;__pyx_n_s_velocity,&amp;__pyx_n_s_channel,&amp;__pyx_n_s_outlock,&amp;__pyx_n_s_timing,&amp;__pyx_n_s_attack,&amp;__pyx_n_s_release,&amp;__pyx_n_s_BUFFERSIZE,&amp;__pyx_n_s_MASTER,&amp;__pyx_n_s_SLEEPTIME,&amp;__pyx_n_s_data,&amp;__pyx_n_s_mode,&amp;__pyx_n_s_dirty,&amp;__pyx_n_s_tune,&amp;__pyx_n_s_posx,&amp;__pyx_n_s_posy,&amp;__pyx_n_s_update_time,0};
+    PyObject* values[21] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = <span class='py_macro_api'>PyTuple_GET_SIZE</span>(__pyx_args);
       switch (pos_args) {
+        case 21: values[20] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 20);
+        CYTHON_FALLTHROUGH;
         case 20: values[19] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 19);
         CYTHON_FALLTHROUGH;
         case 19: values[18] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 18);
@@ -4399,121 +4402,127 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
         case  1:
         if (likely((values[1] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_out_bufferR)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 1); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 1); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_out_i)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 2); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 2); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_notes)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 3); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 3); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_note)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 4); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 4); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_velocity)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 5); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 5); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  6:
         if (likely((values[6] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_channel)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 6); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 6); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (likely((values[7] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_outlock)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 7); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 7); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  8:
         if (likely((values[8] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_timing)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 8); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 8); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case  9:
         if (likely((values[9] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_attack)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 9); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 9); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 10:
         if (likely((values[10] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_release)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 10); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 10); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 11:
         if (likely((values[11] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_BUFFERSIZE)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 11); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 11); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 12:
         if (likely((values[12] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_MASTER)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 12); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 12); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 13:
         if (likely((values[13] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_SLEEPTIME)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 13); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 13); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 14:
         if (likely((values[14] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_data)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 14); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 14); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 15:
         if (likely((values[15] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_mode)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 15); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 15); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 16:
         if (likely((values[16] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_dirty)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 16); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 16); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 17:
         if (likely((values[17] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_tune)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 17); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 17); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 18:
         if (likely((values[18] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_posx)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 18); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 18); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
         CYTHON_FALLTHROUGH;
         case 19:
         if (likely((values[19] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_posy)) != 0)) kw_args--;
         else {
-          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, 19); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 19); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+        }
+        CYTHON_FALLTHROUGH;
+        case 20:
+        if (likely((values[20] = <span class='pyx_c_api'>__Pyx_PyDict_GetItemStr</span>(__pyx_kwds, __pyx_n_s_update_time)) != 0)) kw_args--;
+        else {
+          <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, 20); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
         }
       }
       if (unlikely(kw_args &gt; 0)) {
         if (unlikely(<span class='pyx_c_api'>__Pyx_ParseOptionalKeywords</span>(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "sound") &lt; 0)) <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
       }
-    } else if (<span class='py_macro_api'>PyTuple_GET_SIZE</span>(__pyx_args) != 20) {
+    } else if (<span class='py_macro_api'>PyTuple_GET_SIZE</span>(__pyx_args) != 21) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 0);
@@ -4536,6 +4545,7 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
       values[17] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 17);
       values[18] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 18);
       values[19] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 19);
+      values[20] = <span class='py_macro_api'>PyTuple_GET_ITEM</span>(__pyx_args, 20);
     }
     __pyx_v_out_bufferL = values[0];
     __pyx_v_out_bufferR = values[1];
@@ -4557,17 +4567,18 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
     __pyx_v_tune = <span class='pyx_c_api'>__Pyx_PyInt_As_int</span>(values[17]); if (unlikely((__pyx_v_tune == (int)-1) &amp;&amp; <span class='py_c_api'>PyErr_Occurred</span>())) <span class='error_goto'>__PYX_ERR(0, 387, __pyx_L3_error)</span>
     __pyx_v_posx = <span class='pyx_c_api'>__Pyx_PyInt_As_int</span>(values[18]); if (unlikely((__pyx_v_posx == (int)-1) &amp;&amp; <span class='py_c_api'>PyErr_Occurred</span>())) <span class='error_goto'>__PYX_ERR(0, 388, __pyx_L3_error)</span>
     __pyx_v_posy = <span class='pyx_c_api'>__Pyx_PyInt_As_int</span>(values[19]); if (unlikely((__pyx_v_posy == (int)-1) &amp;&amp; <span class='py_c_api'>PyErr_Occurred</span>())) <span class='error_goto'>__PYX_ERR(0, 388, __pyx_L3_error)</span>
+    __pyx_v_update_time = __pyx_<span class='py_c_api'>PyFloat_AsFloat</span>(values[20]); if (unlikely((__pyx_v_update_time == (float)-1) &amp;&amp; <span class='py_c_api'>PyErr_Occurred</span>())) <span class='error_goto'>__PYX_ERR(0, 388, __pyx_L3_error)</span>
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 20, 20, <span class='py_macro_api'>PyTuple_GET_SIZE</span>(__pyx_args)); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
+  <span class='pyx_c_api'>__Pyx_RaiseArgtupleInvalid</span>("sound", 1, 21, 21, <span class='py_macro_api'>PyTuple_GET_SIZE</span>(__pyx_args)); <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L3_error)</span>
   __pyx_L3_error:;
   <span class='pyx_c_api'>__Pyx_AddTraceback</span>("neutron.ccore.sound", __pyx_clineno, __pyx_lineno, __pyx_filename);
   <span class='refnanny'>__Pyx_RefNannyFinishContext</span>();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(!<span class='pyx_c_api'>__Pyx_ArgTypeTest</span>(((PyObject *)__pyx_v_mode), (&amp;PyString_Type), 1, "mode", 1))) <span class='error_goto'>__PYX_ERR(0, 387, __pyx_L1_error)</span>
-  __pyx_r = __pyx_pf_7neutron_5ccore_12sound(__pyx_self, __pyx_v_out_bufferL, __pyx_v_out_bufferR, __pyx_v_out_i, __pyx_v_notes, __pyx_v_note, __pyx_v_velocity, __pyx_v_channel, __pyx_v_outlock, __pyx_v_timing, __pyx_v_attack, __pyx_v_release, __pyx_v_BUFFERSIZE, __pyx_v_MASTER, __pyx_v_SLEEPTIME, __pyx_v_data, __pyx_v_mode, __pyx_v_dirty, __pyx_v_tune, __pyx_v_posx, __pyx_v_posy);
+  __pyx_r = __pyx_pf_7neutron_5ccore_12sound(__pyx_self, __pyx_v_out_bufferL, __pyx_v_out_bufferR, __pyx_v_out_i, __pyx_v_notes, __pyx_v_note, __pyx_v_velocity, __pyx_v_channel, __pyx_v_outlock, __pyx_v_timing, __pyx_v_attack, __pyx_v_release, __pyx_v_BUFFERSIZE, __pyx_v_MASTER, __pyx_v_SLEEPTIME, __pyx_v_data, __pyx_v_mode, __pyx_v_dirty, __pyx_v_tune, __pyx_v_posx, __pyx_v_posy, __pyx_v_update_time);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4578,7 +4589,7 @@ static PyObject *__pyx_pw_7neutron_5ccore_13sound(PyObject *__pyx_self, PyObject
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy) {
+static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_out_bufferL, PyObject *__pyx_v_out_bufferR, PyObject *__pyx_v_out_i, PyObject *__pyx_v_notes, int __pyx_v_note, int __pyx_v_velocity, int __pyx_v_channel, PyObject *__pyx_v_outlock, double __pyx_v_timing, float __pyx_v_attack, float __pyx_v_release, int __pyx_v_BUFFERSIZE, float __pyx_v_MASTER, float __pyx_v_SLEEPTIME, __Pyx_memviewslice __pyx_v_data, PyObject *__pyx_v_mode, int __pyx_v_dirty, int __pyx_v_tune, int __pyx_v_posx, int __pyx_v_posy, float __pyx_v_update_time) {
   PyBoolObject *__pyx_v_stop = 0;
   double __pyx_v_rel_stime;
   double __pyx_v_att_stime;
@@ -4626,7 +4637,7 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
   return __pyx_r;
 }
 /* … */
-  __pyx_tuple__39 = <span class='py_c_api'>PyTuple_Pack</span>(35, __pyx_n_s_out_bufferL, __pyx_n_s_out_bufferR, __pyx_n_s_out_i, __pyx_n_s_notes, __pyx_n_s_note, __pyx_n_s_velocity, __pyx_n_s_channel, __pyx_n_s_outlock, __pyx_n_s_timing, __pyx_n_s_attack, __pyx_n_s_release, __pyx_n_s_BUFFERSIZE, __pyx_n_s_MASTER, __pyx_n_s_SLEEPTIME, __pyx_n_s_data, __pyx_n_s_mode, __pyx_n_s_dirty, __pyx_n_s_tune, __pyx_n_s_posx, __pyx_n_s_posy, __pyx_n_s_stop, __pyx_n_s_rel_stime, __pyx_n_s_att_stime, __pyx_n_s_lastbuffer, __pyx_n_s_sva, __pyx_n_s_eva, __pyx_n_s_svr, __pyx_n_s_evr, __pyx_n_s_now, __pyx_n_s_bufL, __pyx_n_s_bufR, __pyx_n_s_i, __pyx_n_s_last_update_time, __pyx_n_s_wave, __pyx_n_s_e);<span class='error_goto'> if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 384, __pyx_L1_error)</span>
+  __pyx_tuple__39 = <span class='py_c_api'>PyTuple_Pack</span>(36, __pyx_n_s_out_bufferL, __pyx_n_s_out_bufferR, __pyx_n_s_out_i, __pyx_n_s_notes, __pyx_n_s_note, __pyx_n_s_velocity, __pyx_n_s_channel, __pyx_n_s_outlock, __pyx_n_s_timing, __pyx_n_s_attack, __pyx_n_s_release, __pyx_n_s_BUFFERSIZE, __pyx_n_s_MASTER, __pyx_n_s_SLEEPTIME, __pyx_n_s_data, __pyx_n_s_mode, __pyx_n_s_dirty, __pyx_n_s_tune, __pyx_n_s_posx, __pyx_n_s_posy, __pyx_n_s_update_time, __pyx_n_s_stop, __pyx_n_s_rel_stime, __pyx_n_s_att_stime, __pyx_n_s_lastbuffer, __pyx_n_s_sva, __pyx_n_s_eva, __pyx_n_s_svr, __pyx_n_s_evr, __pyx_n_s_now, __pyx_n_s_bufL, __pyx_n_s_bufR, __pyx_n_s_i, __pyx_n_s_last_update_time, __pyx_n_s_wave, __pyx_n_s_e);<span class='error_goto'> if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 384, __pyx_L1_error)</span>
   <span class='refnanny'>__Pyx_GOTREF</span>(__pyx_tuple__39);
   <span class='refnanny'>__Pyx_GIVEREF</span>(__pyx_tuple__39);
 /* … */
@@ -4634,11 +4645,11 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
   <span class='refnanny'>__Pyx_GOTREF</span>(__pyx_t_1);
   if (<span class='py_c_api'>PyDict_SetItem</span>(__pyx_d, __pyx_n_s_sound, __pyx_t_1) &lt; 0) <span class='error_goto'>__PYX_ERR(0, 384, __pyx_L1_error)</span>
   <span class='pyx_macro_api'>__Pyx_DECREF</span>(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_codeobj__40 = (PyObject*)<span class='pyx_c_api'>__Pyx_PyCode_New</span>(20, 0, 35, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_neutron_ccore_pyx, __pyx_n_s_sound, 384, __pyx_empty_bytes);<span class='error_goto'> if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 384, __pyx_L1_error)</span>
+  __pyx_codeobj__40 = (PyObject*)<span class='pyx_c_api'>__Pyx_PyCode_New</span>(21, 0, 36, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_neutron_ccore_pyx, __pyx_n_s_sound, 384, __pyx_empty_bytes);<span class='error_goto'> if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 384, __pyx_L1_error)</span>
 </pre><pre class="cython line score-0">&#xA0;<span class="">385</span>:           <span class="n">outlock</span><span class="p">,</span> <span class="n">double</span> <span class="n">timing</span><span class="p">,</span> <span class="nb">float</span> <span class="n">attack</span><span class="p">,</span> <span class="nb">float</span> <span class="n">release</span><span class="p">,</span></pre>
 <pre class="cython line score-0">&#xA0;<span class="">386</span>:           <span class="nb">int</span> <span class="n">BUFFERSIZE</span><span class="p">,</span> <span class="nb">float</span> <span class="n">MASTER</span><span class="p">,</span> <span class="nb">float</span> <span class="n">SLEEPTIME</span><span class="p">,</span></pre>
 <pre class="cython line score-0">&#xA0;<span class="">387</span>:           <span class="n">np</span><span class="o">.</span><span class="n">complex64_t</span><span class="p">[:,:,::</span><span class="mf">1</span><span class="p">]</span> <span class="n">data</span><span class="p">,</span> <span class="nb">str</span> <span class="n">mode</span><span class="p">,</span> <span class="nb">int</span> <span class="n">dirty</span><span class="p">,</span> <span class="nb">int</span> <span class="n">tune</span><span class="p">,</span></pre>
-<pre class="cython line score-0">&#xA0;<span class="">388</span>:           <span class="nb">int</span> <span class="n">posx</span><span class="p">,</span> <span class="nb">int</span> <span class="n">posy</span><span class="p">):</span></pre>
+<pre class="cython line score-0">&#xA0;<span class="">388</span>:           <span class="nb">int</span> <span class="n">posx</span><span class="p">,</span> <span class="nb">int</span> <span class="n">posy</span><span class="p">,</span> <span class="nb">float</span> <span class="n">update_time</span><span class="p">):</span></pre>
 <pre class="cython line score-0">&#xA0;<span class="">389</span>: </pre>
 <pre class="cython line score-1" onclick="(function(s){s.display=s.display==='block'?'none':'block'})(this.nextElementSibling.style)">+<span class="">390</span>:     <span class="k">cdef</span> <span class="kt">bool</span> <span class="nf">stop</span> <span class="o">=</span> <span class="bp">False</span></pre>
 <pre class='cython code score-1 '>  <span class='pyx_macro_api'>__Pyx_INCREF</span>(Py_False);
@@ -5018,8 +5029,8 @@ static PyObject *__pyx_pf_7neutron_5ccore_12sound(CYTHON_UNUSED PyObject *__pyx_
     __pyx_v_sva = __pyx_t_14;
     __pyx_v_eva = __pyx_t_8;
 </pre><pre class="cython line score-0">&#xA0;<span class="">415</span>: </pre>
-<pre class="cython line score-0" onclick="(function(s){s.display=s.display==='block'?'none':'block'})(this.nextElementSibling.style)">+<span class="">416</span>:         <span class="k">if</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">last_update_time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.3</span><span class="p">:</span></pre>
-<pre class='cython code score-0 '>    __pyx_t_7 = (((__pyx_v_now - __pyx_v_last_update_time) &gt; 0.3) != 0);
+<pre class="cython line score-0" onclick="(function(s){s.display=s.display==='block'?'none':'block'})(this.nextElementSibling.style)">+<span class="">416</span>:         <span class="k">if</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">last_update_time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">update_time</span><span class="p">:</span></pre>
+<pre class='cython code score-0 '>    __pyx_t_7 = (((__pyx_v_now - __pyx_v_last_update_time) &gt; __pyx_v_update_time) != 0);
     if (__pyx_t_7) {
 /* … */
     }
