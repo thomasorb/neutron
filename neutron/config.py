@@ -35,7 +35,6 @@ MIDI_IN = 'CASIO USB-MIDI:CASIO USB-MIDI MIDI 1'
 #DEVICE = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
 DEVICE = 'Steinberg UR22mkII: USB Audio'
 
-
 ATTACK = 0.05
 RELEASE = 0.5
 
