@@ -1,5 +1,23 @@
 import numpy as np
 
+class Message(object):
+
+    categories = ['note_on', 'note_off']
+    def __init__(self, category, channel, note, velocity):
+        if category not in self.categories:
+            raise Exception('category must be in', self.categories)
+        self.category = category
+        self.channel = int(channel)
+        self.note = int(note)
+        self.velocity = int(velocity)
+
+    def aslist(self):
+        return [self.category, self.channel, self.note, self.velocity]
+
+    def __str__(self):
+        return 'category: {} channel: {} note: {} velocity: {}'.format(*self.aslist())
+        
+
 def envelope(n, a, d, s, r):
     x = np.arange(n, dtype=float) / (n-1)
     env = np.ones_like(x)

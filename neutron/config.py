@@ -1,8 +1,13 @@
 import numpy as np
 
+AUTORECORD = False
+
+
+PORT = 6000
+
 SAMPLERATE = 44100
 NCHANNELS = 2
-BUFFERSIZE = 2000
+BUFFERSIZE = 1000
 BYTEDEPTH = 32
 SLEEPTIME = BUFFERSIZE / SAMPLERATE / 1000.
 MASTER = 0.1
@@ -25,6 +30,7 @@ else:
     raise Exception('bad DEPTH')
 
 # pulseaudio -k && sudo alsa force-reload
+# ffmpeg -ac 2 -i 'Kick 03.aif' 'Kick 03.wav'
 
 MIDI_OUT = 'Midi Through:Midi Through Port-0'
 
@@ -32,8 +38,8 @@ MIDI_OUT = 'Midi Through:Midi Through Port-0'
 #MIDI_IN = 'Midi Through:Midi Through Port-0'
 MIDI_IN = 'CASIO USB-MIDI:CASIO USB-MIDI MIDI 1'
 
-#DEVICE = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
-DEVICE = 'Steinberg UR22mkII: USB Audio'
+DEVICE = 'HDA Intel PCH: ALC293 Analog (hw:0,0)'
+#DEVICE = 'Steinberg UR22mkII: USB Audio'
 
 ATTACK = 0.05
 RELEASE = 0.5

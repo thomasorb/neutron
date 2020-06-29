@@ -1,16 +1,18 @@
 import numpy as np
 import multiprocessing
+import multiprocessing.connection
 import logging
 import time
 import re
 import traceback
 import random
+import warnings
 
 import mido
 
 from . import config
 from . import ccore
-
+from . import utils
 
 
 class Core(object):
@@ -82,7 +84,8 @@ class Core(object):
         except Exception as e:
             print(e)
         
-        
+
+    
 
 class MidiServer(object):
 
@@ -91,27 +94,35 @@ class MidiServer(object):
     durations = {
         'x':100000,
         'oo':4,
+        'oo.':6,
         'o':2,
-        'p':0.5,
-        'pp':0.25,
-        'ppp':1/8}
+        'o.':3,
+        'p':1,
+        'p.':1.5,
+        'pp':0.5,
+        'pp.':0.75,
+        'ppp':0.25}
     accidents = 'd', 'b'
     notes = np.array([0, 2, 4, 5, 7, 9, 11])
 
     def __del__(self):
-        self.outport.panic()
+        try:
+            self.connection.close()
+        except Exception as e:
+            warnings.warn('exception during MidiPlayer closing: {}'.format(e))
     
+   
     def __init__(self, tracks, p):
+
+        self.connection = multiprocessing.connection.Client(
+            ('localhost', config.PORT), authkey=b'neutron')
+        
         self.tracks = tracks
         self.p = p
         # all modes defined in one line !!
         self.modes = [list(np.roll(self.notes, i)) for i in range(7)]
         self.mode = self.modes[config.MODE]
         
-        logging.info('>> MIDI OUTPUTS:\n   {}'.format('\n   '.join(mido.get_output_names())))
-        logging.info('>> QUARK MIDI OUTPUT: {}'.format(config.MIDI_OUT))
-        self.outport = mido.open_output(config.MIDI_OUT)
-
         tempo = self.p[0]
         measure = (self.p[1], self.p[2])
         self.octave = self.p[3]
@@ -121,11 +132,10 @@ class MidiServer(object):
         self.t_bar = measure[0] / measure[1] * 4 * self.t_note # bar duration (s)
         self.bar_divisions = int(self.NOTE_DIVISIONS * measure[0] / measure[1] * 4)
 
-        self.redur = re.compile(r'[opx$]+')
+        self.redur = re.compile(r'[opx.$]+')
         self.repit = re.compile(r'[\dbd?]+')
         self.renote = re.compile(r'[\d?]+')
-        
-        
+                
         timing_stats = list()
         timer = time.time()
         step_index = 0
@@ -191,8 +201,8 @@ class MidiServer(object):
                     msgp = multiprocessing.Process(
                         name='msg', 
                         target=sendmessage,
-                        args=(msgs[i][0][str(step_index % self.bar_divisions)],
-                              self.outport, self.t_step, stop_event))
+                        args=(self.connection, msgs[i][0][str(step_index % self.bar_divisions)],
+                              self.t_step, stop_event))
                     msgp.start()
                     msgps[msgs[i][1]].append((msgp, stop_event))
 
@@ -207,7 +217,14 @@ class MidiServer(object):
         print(np.std(timing_stats))
 
     def read_last_bar(self, track):
-        
+
+        # tracks 0, 1 = sampler
+        # tracks 2, 3, 4 = synth
+        if track == 0 or track == 1:
+            is_sampler = True
+        else:
+            is_sampler = False
+            
         def acc(s):
             if 'b' in s:
                 return -1
@@ -249,10 +266,14 @@ class MidiServer(object):
                 ipitch = self.renote.findall(inum)[0]
                 if '?' in ipitch:
                     #np.random.seed()
-                    ipitch = np.random.randint(12,12*6)
+                    if not is_sampler:
+                        ipitch = np.random.randint(12,12*6)
+                    else:
+                        ipitch = np.random.randint(12)
                 else:
-                    ipitch = int(ipitch) - 1
-                    ipitch = conv(ipitch, self.mode, octave) + acc(inum)
+                    if not is_sampler:         
+                        ipitch = int(ipitch) - 1
+                        ipitch = conv(ipitch, self.mode, octave) + acc(inum)
                 pitch.append(ipitch)
                     
                          
@@ -269,6 +290,7 @@ class MidiServer(object):
                     duration = self.durations[random.choice(['p', 'pp', 'o', 'oo'])]
                     
             imsg = [pitch, duration, velocity, instrument]
+            
             # durations are converted and a message dict is returned
             msgs_dict[str(step)] = [imsg[0], imsg[1] * self.t_note, imsg[2], imsg[3]]
             if dur[0] == 'x':
@@ -280,18 +302,18 @@ class MidiServer(object):
         
 
 
-def sendmessage(msg, outport, t_step, stop_event):
+def sendmessage(connection, msg, t_step, stop_event):
     stime = time.time()
     notes = msg[0]
-    print(msg)
     for inote in notes:
-        outport.send(mido.Message('note_on', note=inote, velocity=msg[2],
-                                  channel=msg[3]))
-
+        #outport.send(mido.Message('note_on', note=inote, velocity=msg[2],
+        #                          channel=msg[3]))
+        connection.send(('note_on', msg[3], inote, msg[2]))
     while time.time() - stime < msg[1] - 8 * t_step and not stop_event.is_set():
         time.sleep(config.SLEEPTIME)
 
     for inote in notes:
-        outport.send(mido.Message('note_off', note=inote, channel=msg[3]))
+        #outport.send(mido.Message('note_off', note=inote, channel=msg[3]))
+        connection.send(('note_off', msg[3], inote, msg[2]))
 
 
